@@ -1,9 +1,10 @@
 from rasterio.transform import from_origin
 from os import PathLike
+from tiler import to_cmap
 
+import tempfile
 import numpy as np
 import os
-import to_cmap
 import subprocess
 import rasterio
 
@@ -48,24 +49,32 @@ def gen_tiles(data: np.ndarray,
     # GeoTransform: top-left corner origin
     transform = from_origin(lon_min, lat_max, pixel_width, pixel_height)
 
-    # Save as GeoTIFF
-    with rasterio.open(
-        os.path.join(temp_dir, 'colormap.tif'),
-        "w",
-        driver="GTiff",
-        height=data.shape[0],
-        width=data.shape[1],
-        count=color_data.shape[0],  # number of bands
-        dtype=color_data.dtype,
-        crs="EPSG:4326",  # WGS84
-        transform=transform,
-    ) as dst:
-        dst.write(color_data)
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
 
-    # Generate tiles directly from the RGB image
-    subprocess.run([
-        'gdal2tiles.py', 
-        '-z', f'{zoom_min}-{zoom_max}',  # zoom levels
-        os.path.join(temp_dir, 'colormap.tif'), 
-        str(output_dir)
-    ])
+    with tempfile.TemporaryDirectory(dir=temp_dir) as thread_temp_dir:
+        tif_path = os.path.join(thread_temp_dir, 'colormap.tif')
+
+        # Save colormap as tif
+        with rasterio.open(
+            tif_path,
+            "w",
+            driver="GTiff",
+            height=data.shape[0],
+            width=data.shape[1],
+            count=color_data.shape[0],  # number of bands
+            dtype=color_data.dtype,
+            crs="EPSG:4326",  # WGS84
+            transform=transform,
+        ) as dst:
+            dst.write(color_data)
+
+        # Generate tiles directly from the RGB image
+        subprocess.run([
+            'gdal2tiles.py', 
+            '-z', f'{zoom_min}-{zoom_max}',  # zoom levels
+            '-r', 'near',
+            '--webviewer=none',
+            tif_path, 
+            str(output_dir)
+        ], stdout=subprocess.PIPE)

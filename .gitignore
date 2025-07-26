@@ -1,5 +1,8 @@
 # Custom files / dirs to ignore
+output/
 tiles/
+temp/
+tmp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

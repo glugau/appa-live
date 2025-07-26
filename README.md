@@ -14,7 +14,7 @@ The first line is required because APPA wants older package versions for some th
 For generating png tiles, you must also run
 
 ```bash
-sudo apt install gdal-bin
+sudo apt-get update && sudo apt install gdal-bin
 ```
 
 Or equivalent if your package manager is not `apt`. The important requirement here is `gdal2tiles.py`.
