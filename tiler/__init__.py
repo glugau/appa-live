@@ -15,17 +15,25 @@ def dataset_to_tiles(dataset: xr.Dataset,
                      zoom_max: int = 3,
                      cmap_mappings: dict[str, str] = {},
                      cmap_default: str = 'viridis',
-                     temp_dir: PathLike = './tmp'):
-    """_summary_
+                     temp_dir: PathLike = './tmp',
+                     n_threads: int = None):
+    """Generate all tiles for a given dataset, to be viewed in applications such
+    as Leaflet.
 
     Args:
-        dataset (xr.Dataset): _description_
-        output_dir (PathLike): _description_
-        zoom_min (int, optional): _description_. Defaults to 0.
-        zoom_max (int, optional): _description_. Defaults to 3.
-        cmap_mappings (dict[str, str], optional): _description_. Defaults to {}.
-        cmap_default (str, optional): _description_. Defaults to 'viridis'.
-        temp_dir (PathLike, optional): _description_. Defaults to './tmp'.
+        dataset (xr.Dataset): Dataset for which to generate the tiles
+        output_dir (PathLike): Output directory for the
+        zoom_min (int, optional): Minimum zoom. Defaults to 0.
+        zoom_max (int, optional): Maximum zoom. Defaults to 3.
+        cmap_mappings (dict[str, str], optional): {'variable': 'colormap'} pairs
+            that will override `cmap_default`. Defaults to {}.
+        cmap_default (str, optional): Default colormap if none was provided in
+            `cmap_mappings` for the given variable. Defaults to 'viridis'.
+        temp_dir (PathLike, optional): Temporary directory used during tile
+            generation. Defaults to './tmp'.
+        n_threads (int, optional): Number of threads used for the generation of
+            tiles. If `None` is provided, `min(32, os.cpu_count() + 4)` will be
+            used. Defaults to `None`.
     """
     logger = logging.getLogger(__name__)
     
@@ -57,7 +65,7 @@ def dataset_to_tiles(dataset: xr.Dataset,
             temp_dir
         )
     
-    n_threads = min(32, os.cpu_count() + 4)
+    n_threads = min(32, os.cpu_count() + 4) if n_threads is None else n_threads
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         futures = []
         for variable in dataset.data_vars:
