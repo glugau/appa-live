@@ -1,0 +1,24 @@
+denoiser_model_path: /home/jovyan/shared/ggluckmann/appa-model-data/model/yfc0qwf4/0/latents/l6gqjzqt/denoisers/gxfhtgin/2
+autoencoder_model_path: /home/jovyan/shared/ggluckmann/appa-model-data/model/yfc0qwf4/0/latents/l6gqjzqt/ae
+weather_data_stats_path: /home/jovyan/shared/ggluckmann/appa-model-data/model/stats_era5_1993-2021-1h-1440x721-gencast.zarr
+latent_data_stats_path: /home/jovyan/shared/ggluckmann/appa-model-data/model/yfc0qwf4/0/latents/l6gqjzqt/stats.pth
+weather_data_dir_path: /home/jovyan/shared/ggluckmann/appa-weather-data/
+output_dir_path: /home/jovyan/shared/ggluckmann/appa-forecasts/
+temp_dir_path: temp/
+
+diffusion:
+  num_steps: 32  # Defaults to model's validation denoising steps
+  mmps_iters: 2
+  sampler:
+    type: pc
+    config:
+      corrections: 2
+      delta: 0.1
+
+lead_time: 48 # How many hours to predict
+
+# If one of them is auto, will be equal to blanket_size minus the other
+preds_per_step: 12  # States to predict per AR step.
+past_window_size: auto  # Size of the sliding window of past GT/generated states
+
+precision: float16  # Options: float32, float16, bfloat16, null = model training precision
