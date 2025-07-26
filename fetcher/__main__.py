@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 import argparse
 import importlib
 import logging
-import processing
-from custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
+from fetcher import processing
+from fetcher.custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
 import shutil
 
 load_dotenv() # development (API keys)

@@ -1,36 +1,9 @@
-import { generateTile } from "./data.js"
-
 var map = L.map('map', {
             center: [-9.669776090959203e-11, -0.12499999999998579],
             zoom: 5,
             minZoom: 0,
             maxZoom: 8,
         });
-
-var CanvasLayer = L.GridLayer.extend({
-    createTile: async function(coords, done){
-        var error;
-
-        // create a <canvas> element for drawing
-        var tile = L.DomUtil.create('canvas', 'leaflet-tile');
-
-        // setup tile width and height according to the options
-        var size = this.getTileSize();
-        tile.width = size.x;
-        tile.height = size.y;
-
-        await generateTile(coords, size, tile);
-
-
-
-        // draw something asynchronously and pass the tile to the done() callback
-        setTimeout(function() {
-            done(error, tile);
-        }, 1000);
-
-        return tile;
-    }
-});
         
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors', minZoom: 0, maxZoom: 5});
 var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>', minZoom: 0, maxZoom: 5});

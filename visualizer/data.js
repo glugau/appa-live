@@ -8,5 +8,3 @@
 // let variable = await zarr.open(root.resolve("2m_temperature"), { kind: "array" });
 // const region = await zarr.get(variable, [1, null, null])
 // console.log(region)
-
-export function generateTile(){}

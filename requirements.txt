@@ -1,0 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+xarray==2025.7.1
+xarray-beam==0.8.0
+zarr==3.0.10
+cmocean==4.0.3
