@@ -1,3 +1,6 @@
+# Custom files / dirs to ignore
+tiles/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

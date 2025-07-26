@@ -18,5 +18,3 @@ def array_to_rgb_u8(data, cmap_name='viridis'):
     rgb = np.moveaxis(rgba[..., :3], -1, 0)  # -> (3, lat, lon)
     rgb = (rgb * 255).astype(np.uint8)
     return rgb
-
-6 * 3 * 50 + 5 * 3 * 13 * 50
