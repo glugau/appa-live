@@ -1,11 +1,11 @@
-# appa-fetcher
+# Fetcher
 
 A service that pulls data from online sources on which the APPA model is then conditioned for its public predictions.
 
 ## Usage
 
 ```bash
-python main.py [-h] [-t TARGET_FOLDER] [--skip-processing] [--skip-download] [-c]
+python -m fetcher [-h] [-t TARGET_FOLDER] [--skip-processing] [--skip-download] [-c]
 ```
 
 ## API key requirements

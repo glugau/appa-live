@@ -1,4 +1,4 @@
-# appa-public-inference
+# Forecast
 This service utilises available data (downloaded by [appa-fetcher](https://github.com/glugau/appa-fetcher)) to then perform inference with the APPA model, and store the results.
 
 ## Usage
@@ -20,10 +20,13 @@ Copy the [example_config.yaml](example_config.yaml) configuration file and modif
 Finally, run the script with
 
 ```
-python main.py [-h] [-f] -c CONFIG_PATH
+python -m forecast [-h] -c CONFIG_PATH -d WEATHER_DATA_DIR -o OUTPUT_DIR [--temp-dir TEMP_DIR] [-f]
 ```
 
 # Arguments
 - **-h, --help**: Display an help message
-- **-f, --force**: Force the forecast, even if it has already been done.
 - **-c, --config-path** _CONFIG_PATH_: Path to a configuration `.yaml` file. A working example is provided in [forecast_ar.yaml](config/forecast_ar.yaml).
+- **-d, --weather-data-dir** _WEATHER_DATA_DIR_: Path to the directory containing the weather data on which to condition the forecast.
+- **-o, --output-dir** _OUTPUT_DIR_: Output directory that will contain the forecast .zarr file.
+- **--temp-dir** TEMP_DIR: Temporary directory root if you want to override the system default temp directory.
+- **-f, --force**: Force the forecast even if one with the same name already exists.

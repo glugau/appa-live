@@ -14,7 +14,7 @@ The first line is required because APPA wants older package versions for some th
 For generating png tiles, you must also run
 
 ```bash
-sudo apt-get update && sudo apt install gdal-bin
+sudo apt-get update && sudo apt install -y gdal-bin
 ```
 
 Or equivalent if your package manager is not `apt`. The important requirement here is `gdal2tiles.py`.
@@ -36,3 +36,7 @@ python main.py -c path/to/forecast/config.yaml
 ```
 
 You can also use `-h` to get a help message and `--temp-dir` to override the default temporary directory location. By default, it is set to the one provided by your OS.
+
+## Running individual modules
+
+Most modules can be run with `python -m module_name`. Refer to each module's "README.md" file for more information.
