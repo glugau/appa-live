@@ -1,6 +1,7 @@
 # Custom files / dirs to ignore
 output/
 tiles/
+data/
 temp/
 tmp/
 

@@ -1,4 +1,4 @@
-from . import gen_tiles
+from . import gen_tiles, constants
 from os import PathLike
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -45,7 +45,7 @@ def dataset_to_tiles(dataset: xr.Dataset,
     def process_slice(variable: str, itime: int, ilevel: int, variable_output_dir: Path, cmap: str):
         
         if itime == 0 and (ilevel is None or ilevel <= 0):
-            variations *= len(dataset['time'].to_numpy())
+            variations = len(dataset['time'].to_numpy())
             if ilevel is not None and ilevel >= 0:
                 variations *= len(dataset['level'].to_numpy())
             logger.info(f'Generating tiles for {variations} slices (time x levels) of {variable}')
@@ -98,4 +98,6 @@ def dataset_to_tiles(dataset: xr.Dataset,
                             cmap
                         )
                     )
-                    
+
+        for future in futures:
+            future.result()

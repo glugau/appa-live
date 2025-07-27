@@ -1,11 +1,13 @@
 import os
-from dotenv import load_dotenv
 import argparse
 import importlib
 import logging
+import shutil
+
+from dotenv import load_dotenv
+
 from fetcher import processing
 from fetcher.custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
-import shutil
 
 load_dotenv() # development (API keys)
 
@@ -51,7 +53,7 @@ if not args.skip_download:
         logger.info(f'Fetching the latest data from {source} into the folder {target}')
         if not os.path.exists(target):
             os.makedirs(target)
-        data_source = importlib.import_module(f'data_sources.{source}')
+        data_source = importlib.import_module(f'fetcher.data_sources.{source}')
         datetime = data_source.download_latest(target)
         logger.info(f'Successfuly downloaded data from timestamp {datetime}')
         if source == 'ifs':
@@ -84,7 +86,8 @@ if args.cleanup:
         shutil.rmtree(os.path.join(args.target_folder, f'{source}{RAW_SUFFIX}'))
         
 if not args.skip_processing:
-    logger.info(f'Done! Processed data is available in {os.path.join(args.target_folder, 'processed')}')
+    output_dir = os.path.join(args.target_folder, 'processed')
+    logger.info(f'Done! Processed data is available in {output_dir}')
 if not args.cleanup:
     logger.info(('Raw download files are available in folders with the '
                  f'"{RAW_SUFFIX}" suffix, in {args.target_folder}'))

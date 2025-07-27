@@ -2,9 +2,6 @@ denoiser_model_path: model_data/yfc0qwf4/0/latents/l6gqjzqt/denoisers/gxfhtgin/2
 autoencoder_model_path: model_data/yfc0qwf4/0/latents/l6gqjzqt/ae
 weather_data_stats_path: model_data/stats_era5_1993-2021-1h-1440x721-gencast.zarr
 latent_data_stats_path: model_data/yfc0qwf4/0/latents/l6gqjzqt/stats.pth
-weather_data_dir_path: /home/jovyan/shared/ggluckmann/appa-weather-data/
-output_dir_path: output/
-temp_dir_path: temp/
 
 diffusion:
   num_steps: 32  # Defaults to model's validation denoising steps

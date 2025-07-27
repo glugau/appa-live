@@ -21,7 +21,7 @@ from appa.nn.triggers import skip_init
 from appa.observations import observator_full
 from appa.sampling import LMSSampler, PCSampler
 from appa.save import load_denoiser, safe_load, safe_save
-from custom_datasets import CustomLatentBlanketDataset
+from .custom_datasets import CustomLatentBlanketDataset
 
 def forecast_ar(
     denoiser_model_path: os.PathLike,
