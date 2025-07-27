@@ -1,4 +1,5 @@
 import xarray as xr
+import subprocess
 import importlib
 import argparse
 import tempfile
@@ -244,21 +245,23 @@ def upload_data(
         src_path (os.PathLike): Directory to upload
         dst_path (os.PathLike): Destination directory name, in the bucket
     """
-    s3 = boto3.client(
-        service_name='s3',
-        endpoint_url = os.environ['S3_ENDPOINT'],
-        aws_access_key_id = os.environ['S3_ACCESS_KEY_ID'],
-        aws_secret_access_key = os.environ['S3_SECRET_ACCESS_KEY'],
-        region_name='auto'
-    )
     
-    for root, _, files in os.walk(src_path):
-        for file in files:
-            local_path = os.path.join(root, file)
-            relative_path = os.path.relpath(local_path, src_path)
-            key = (Path(dst_path) / relative_path).as_posix().lstrip('/')
-            with open(local_path, 'rb') as f:
-                s3.upload_fileobj(f, 'appa-forecasts', key)
+    bucket_path = f's3://{os.environ['S3_BUCKET_NAME']}/{Path(dst_path).as_posix().lstrip('/')}'
+    cmd = [
+        'aws', 's3', 'sync',
+        src_path,
+        bucket_path,
+        '--endpoint-url', os.environ['S3_ENDPOINT'],
+        '--region', 'auto'
+    ]
+
+    env = {
+        **subprocess.os.environ,
+        "AWS_ACCESS_KEY_ID": os.environ['S3_ACCESS_KEY_ID'],
+        "AWS_SECRET_ACCESS_KEY": os.environ['S3_SECRET_ACCESS_KEY']
+    }
+
+    subprocess.run(cmd, check=True, env=env)
                 
 def writefile(file_key: str, contents: str):
     s3 = boto3.client(
@@ -270,7 +273,7 @@ def writefile(file_key: str, contents: str):
     )
     
     s3.put_object(
-        Bucket='appa-forecasts',
+        Bucket=os.environ['S3_BUCKET_NAME'],
         Key=file_key,
         Body=contents.encode('utf-8')
     )

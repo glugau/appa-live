@@ -19,6 +19,14 @@ sudo apt-get update && sudo apt install -y gdal-bin
 
 Or equivalent if your package manager is not `apt`. The important requirement here is `gdal2tiles.py`.
 
+For uploading the tiles to an S3 bucket, this script makes use of the `aws` CLI, which has programs that are a lot more efficient at uploading many small files than what could be achieved with `boto3`. Install it with
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+```
+
 ## Configuring environment variables
 Here are all the required environment variables to provide for the script to work
 
