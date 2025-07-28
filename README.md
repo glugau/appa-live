@@ -43,10 +43,11 @@ curl -s https://api.github.com/repos/protomaps/go-pmtiles/releases/latest \
 ## Configuring environment variables
 Here are all the required environment variables to provide for the script to work
 
-- _CDS_API_KEY_: Your CDS api key, to download ERA5 data ([more info](https://cds.climate.copernicus.eu/how-to-api))
-- _S3_ACCESS_KEY_ID_: Your S3 bucket access key ID
-- _S3_SECRET_ACCESS_KEY_: Your S3 bucket secret key
-- _S3_ENDPOINT_: Your S3 bucket endpoint
+- **CDS_API_KEY**: Your CDS api key, to download ERA5 data ([more info](https://cds.climate.copernicus.eu/how-to-api))
+- **S3_ACCESS_KEY_ID**: Your S3 bucket access key ID
+- **S3_SECRET_ACCESS_KEY**: Your S3 bucket secret key
+- **S3_ENDPOINT**: Your S3 bucket endpoint
+- **S3_BUCKET_NAME**: The name of your S3 bucket
 
 ## Usage
 

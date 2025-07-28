@@ -28,25 +28,21 @@ function getTimeInterval(metadata) {
 
 let cachedLayers = {}
 let currentPMTilesLayer = null;
+let currentTDPMTilesLayer = null;
 
-// Main map loading
-async function setupMap() {
-    const response = await fetch(dataURL + 'metadata.json')
-    const metadata = await response.json()
+function showVariable(map, metadata, variable, iPressureLevel) {
+    // Clear cached layers
+    for (const key of Object.keys(cachedLayers)) {
+        map.removeLayer(cachedLayers[key]);
+        delete cachedLayers[key];
+    }
 
-    var map = L.map('map', {
-        zoom: 5,
-        center: [50.586180926650044, 5.559588296374543],
-        timeDimension: true,
-        timeDimensionOptions: {
-            timeInterval: getTimeInterval(metadata),
-            period: "PT1H"
-        },
-        timeDimensionControl: true,
-    });
+    currentPMTilesLayer = null; // Already removed from the cached layers cleanse
 
-    osm.addTo(map);
-
+    if(currentTDPMTilesLayer) {
+        map.removeLayer(currentTDPMTilesLayer);
+        currentTDPMTilesLayer = null;
+    }
 
     const pmtilesLayer = L.tileLayer('', {}); // dummy layer
     const TDPmtiles = L.TimeDimension.Layer.extend({
@@ -67,7 +63,12 @@ async function setupMap() {
                 continue;
             }
 
-            const pmtilesUrl = `${dataURL}tiles/2025-07-28T00Z_PT48H/geopotential/lvl0/h${i}.pmtiles`;
+            let pmtilesUrl = `${dataURL}tiles/${metadata.latest}/${variable}/`;
+            if(metadata.variables[variable].is_level) {
+                pmtilesUrl += `lvl${iPressureLevel}/`
+            } 
+            pmtilesUrl += `h${i}.pmtiles`
+
             const source = new PMTiles(pmtilesUrl);
             const layer = leafletRasterLayer(source, {maxNativeZoom: 2});
             layer.setOpacity(0);
@@ -86,6 +87,63 @@ async function setupMap() {
     const tdPmtilesLayer = new TDPmtiles(pmtilesLayer, {attribution: '<a href="https://montefiore-sail.github.io/appa/">APPA</a> weather model'});
     tdPmtilesLayer.addTo(map);
     tdPmtilesLayer._onNewTimeLoading();
+    currentTDPMTilesLayer = tdPmtilesLayer;
+}
+
+// Main map loading
+async function setupMap() {
+    const response = await fetch(dataURL + 'metadata.json')
+    const metadata = await response.json()
+
+    var map = L.map('map', {
+        zoom: 5,
+        center: [50.586180926650044, 5.559588296374543],
+        timeDimension: true,
+        timeDimensionOptions: {
+            timeInterval: getTimeInterval(metadata),
+            period: "PT1H"
+        },
+        timeDimensionControl: true,
+    });
+
+    osm.addTo(map);
+
+    // Setup the variable selector (top right)
+    const VariableSelector = L.Control.extend({
+        onAdd: function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-bar');
+            const select = L.DomUtil.create('select', '', div);
+
+            // Prevent map interactions when interacting with control
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+
+            Object.keys(metadata.variables).forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                select.appendChild(opt);
+            });
+
+            const runLogic = value => {
+                console.log('Selected:', value);
+                showVariable(map, metadata, value, 0)
+            };
+
+            select.onchange = e => runLogic(e.target.value);
+
+            // Run logic on initial load
+            setTimeout(() => runLogic(select.value), 0);
+
+            return div;
+        },
+
+        onRemove: function(map) {}
+    });
+    const variableSelector = new VariableSelector({ position: 'topright' });
+    map.addControl(variableSelector);
+
+    L.control.slideMenu('<p>test</p>').addTo(map);
 }
 
 setupMap();
