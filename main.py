@@ -80,7 +80,7 @@ def main():
                 metadata['variables'][variable] = { 'is_level': is_level }
             # metadata['latitudes'] = list(ds['latitude'].to_numpy())
             # metadata['longitudes'] = list(ds['longitude'].to_numpy())
-            metadata['levels'] = list(ds['level'].to_numpy())
+            metadata['levels'] = ds['level'].to_numpy().astype(int).tolist()
             writefile('metadata.json', json.dumps(metadata, indent=2))
                     
         except Exception:

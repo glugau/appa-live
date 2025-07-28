@@ -1,101 +1,31 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title></title>
+        <title>APPA Live viewer</title>
         <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
         <!-- Leaflet CSS code -->
          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
             integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
             crossorigin=""/>
-        <!-- Leaflet JS code -->
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-        
+        <!-- TimeDimension CSS -->
+        <link href=" https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.control.min.css "rel="stylesheet">
+
         <link rel="stylesheet" href="./styles.css" />
+
+        <!-- Icon -->
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%2210 0 100 100%22><text y=%22.90em%22 font-size=%2290%22>🦬</text></svg>"/>
     </head>
     <body>
         <!-- MAP -->
         <div id="map">
         </div>
 
-        <!-- Variable selector -->
-        <div id="variable-select-container" style="
-        position: fixed;
-        top: 20px;
-        left: 15%;
-        width: 70%;
-        text-align: center;
-        z-index: 1000;
-        ">
-            <select id="variable-select" style="
-                width: 100%;
-                padding: 8px;
-                font-size: 16px;
-                border-radius: 6px;
-                background: rgba(255,255,255,0.85);
-                border: 1px solid #ccc;
-                box-shadow: none;
-                appearance: none;
-                -webkit-appearance: none;
-                -moz-appearance: none;
-            ">
-                <option value="temp">Temperature</option>
-                <option value="humidity">Humidity</option>
-                <option value="pressure">Pressure</option>
-            </select>
-        </div>
+        <!-- Libraries JS -->
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/leaflet@1.5.1/dist/leaflet.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/iso8601-js-period@0.2.1/iso8601.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.min.js"></script>
 
-        <!-- Pressure selector -->
-        <div id="pressure-container" style="
-        position: fixed;
-        top: 50%;
-        right: 20px;
-        transform: translateY(-50%);
-        width: 60px;
-        background: rgba(255,255,255,0.85);
-        padding: 10px 5px;
-        border-radius: 8px;
-        box-sizing: border-box;
-        z-index: 1000;
-        text-align: center;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-weight: 500;
-        user-select: none;
-        ">
-            <div style="margin-bottom: 10px; font-weight: 700;">Pressure Level</div>
-                <input id="pressure-slider" type="range" min="0" max="5" step="1" orient="vertical" style="
-                    writing-mode: vertical-lr; /* vertical bottom to top for most browsers */
-                    direction: ltr;
-                    width: 30px;
-                    height: 150px;
-                    margin-bottom: 10px;
-                ">
-            <div id="pressure-ticks" style="display: flex; flex-direction: column; justify-content: space-between; height: 150px; font-size: 12px; padding-left: 5px;">
-                <!-- ticks inserted by JS -->
-            </div>
-        </div>
-        
-        <!-- Bottom slider -->
-        <div id="slider-container" style="
-        position: fixed;
-        bottom: 20px;
-        left: 10%;
-        width: 80%;
-        background: rgba(255,255,255,0.5);
-        padding: 10px 15px;
-        border-radius: 8px;
-        box-sizing: border-box;
-        z-index: 1000;
-        text-align: center;
-        ">
-            <div id="time-display" style="font-weight: bold; margin-bottom: 8px;">
-                <button id="play-pause" style="padding: 4px 10px; font-size: 14px; cursor: pointer;">▶️</button>
-                <span id="time-text">Time: 0:00</span>
-            </div>
-            <input id="slider" type="range" min="0" max="48" step="1" style="width: 100%;">
-        </div>
+        <!-- Custom JS -->
         <script src="./main.js" type="module"></script>
-        <script src="./controls.js" type="text/javascript"></script>
     </body>
 </html>

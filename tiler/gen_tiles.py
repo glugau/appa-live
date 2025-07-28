@@ -82,6 +82,7 @@ def gen_tiles(data: np.ndarray,
             '-z', f'{zoom_min}-{zoom_max}',  # zoom levels
             '-r', 'near',
             '--webviewer=none',
+            '--xyz',
             tif_path, 
             output_dir.as_posix()
         ], stdout=subprocess.PIPE)
