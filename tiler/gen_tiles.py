@@ -76,29 +76,33 @@ def gen_tiles(data: np.ndarray,
             dst.write(color_data)
 
         # Generate tiles directly from the RGB image
+        output_dir = Path(output_dir)
         subprocess.run([
             'gdal2tiles.py', 
             '-z', f'{zoom_min}-{zoom_max}',  # zoom levels
             '-r', 'near',
             '--webviewer=none',
             tif_path, 
-            str(output_dir)
+            output_dir.as_posix()
         ], stdout=subprocess.PIPE)
         
         if pmtiles:
+            mbtiles_path = output_dir.with_name(output_dir.name + '.mbtiles')
+            pmtiles_path = output_dir.with_name(output_dir.name + '.pmtiles')
+            
             subprocess.run([
                 'mb-util', 
                 '--image_format=png',
                 str(output_dir),
-                str(Path(output_dir).with_suffix('mbtiles'))
+                str(mbtiles_path)
             ], stdout=subprocess.PIPE)
             
             subprocess.run([
                 'pmtiles',
                 'convert', 
-                str(Path(output_dir).with_suffix('mbtiles')),
-                str(Path(output_dir).with_suffix('pmtiles'))
+                str(mbtiles_path),
+                str(pmtiles_path)
             ], stdout=subprocess.PIPE)
             
-            os.remove(Path(output_dir).with_suffix('mbtiles'))
+            os.remove(mbtiles_path)
             shutil.rmtree(output_dir)
