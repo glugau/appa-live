@@ -1,5 +1,6 @@
 from rasterio.transform import from_origin
 from os import PathLike
+from pathlib import Path
 from tiler import to_cmap
 
 import tempfile
@@ -85,20 +86,19 @@ def gen_tiles(data: np.ndarray,
         ], stdout=subprocess.PIPE)
         
         if pmtiles:
-            mbtiles_path = f'{str(output_dir).replace('/', '').replace('\\', '')}.mbtiles'
             subprocess.run([
                 'mb-util', 
                 '--image_format=png',
                 str(output_dir),
-                mbtiles_path
+                str(Path(output_dir).with_suffix('mbtiles'))
             ], stdout=subprocess.PIPE)
             
             subprocess.run([
                 'pmtiles',
                 'convert', 
-                mbtiles_path,
-                mbtiles_path.replace('mbtiles', 'pmtiles')
+                str(Path(output_dir).with_suffix('mbtiles')),
+                str(Path(output_dir).with_suffix('pmtiles'))
             ], stdout=subprocess.PIPE)
             
-            os.remove(mbtiles_path)
+            os.remove(Path(output_dir).with_suffix('mbtiles'))
             shutil.rmtree(output_dir)
