@@ -7,6 +7,7 @@ import numpy as np
 import os
 import subprocess
 import rasterio
+import shutil
 
 def gen_tiles(data: np.ndarray,
               latitudes: np.ndarray,
@@ -15,7 +16,8 @@ def gen_tiles(data: np.ndarray,
               zoom_min: int = 0,
               zoom_max: int = 3,
               cmap: str = 'viridis',
-              temp_dir: PathLike = './tmp'):
+              temp_dir: PathLike = './tmp',
+              pmtiles: bool = False):
     """Generate, from 2D grid data, tiles that can be served with Leaflet.
     **This function expects longitude to range from 0 included to 360 excluded**.
 
@@ -29,6 +31,9 @@ def gen_tiles(data: np.ndarray,
         cmap (str, optional): Colormap available in `matplotlib.cm`. Defaults to 'viridis'.
         temp_dir (PathLike, optional): Temporary directory that will store at most
             a few megabytes. Defaults to './tmp'.
+        pmtiles (bool, optional): Whether to save the tiles in pmtiles format. This
+            requires mb-util and pmtiles to be installed. The saved output will be
+            in the file `output_dir.pmtiles`. Defaults to False.
     """
     data = np.hstack([data, data[:, :1]])
     longitudes = np.append(longitudes, longitudes[-1] + longitudes[-1] - longitudes[-2])
@@ -78,3 +83,22 @@ def gen_tiles(data: np.ndarray,
             tif_path, 
             str(output_dir)
         ], stdout=subprocess.PIPE)
+        
+        if pmtiles:
+            mbtiles_path = f'{str(output_dir).replace('/', '').replace('\\', '')}.mbtiles'
+            subprocess.run([
+                'mb-util', 
+                '--image_format=png',
+                str(output_dir),
+                mbtiles_path
+            ], stdout=subprocess.PIPE)
+            
+            subprocess.run([
+                'pmtiles',
+                'convert', 
+                mbtiles_path,
+                mbtiles_path.replace('mbtiles', 'pmtiles')
+            ], stdout=subprocess.PIPE)
+            
+            os.remove(mbtiles_path)
+            shutil.rmtree(output_dir)

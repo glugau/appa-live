@@ -60,12 +60,13 @@ def main():
             ds = xr.open_zarr(forecast_zarr_path)
             tiler.dataset_to_tiles(
                 ds,
-                tiles_output_dir,
-                tiler.constants.ZOOM_MIN,
-                tiler.constants.ZOOM_MAX,
-                tiler.constants.CMAP_MAPPINGS,
-                tiler.constants.CMAP_DEFAULT,
-                temp_dir
+                output_dir=tiles_output_dir,
+                zoom_min=tiler.constants.ZOOM_MIN,
+                zoom_max=tiler.constants.ZOOM_MAX,
+                cmap_mappings=tiler.constants.CMAP_MAPPINGS,
+                cmap_default=tiler.constants.CMAP_DEFAULT,
+                temp_dir=temp_dir,
+                pmtiles=True
             )
             
             logger.info('Uploading tiles')

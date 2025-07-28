@@ -16,6 +16,7 @@ def dataset_to_tiles(dataset: xr.Dataset,
                      cmap_mappings: dict[str, str] = {},
                      cmap_default: str = 'viridis',
                      temp_dir: PathLike = './tmp',
+                     pmtiles: bool = False,
                      n_threads: int = None):
     """Generate all tiles for a given dataset, to be viewed in applications such
     as Leaflet.
@@ -62,7 +63,8 @@ def dataset_to_tiles(dataset: xr.Dataset,
             zoom_min,
             zoom_max,
             cmap,
-            temp_dir
+            temp_dir,
+            pmtiles
         )
     
     n_threads = min(32, os.cpu_count() + 4) if n_threads is None else n_threads
