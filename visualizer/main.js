@@ -29,6 +29,9 @@ function getTimeInterval(metadata) {
 let cachedLayers = {}
 let currentPMTilesLayer = null;
 let currentTDPMTilesLayer = null;
+let currentPressureSelector = null;
+let currentVariable = null;
+let currentLevel = null;
 
 function showVariable(map, metadata, variable, iPressureLevel) {
     // Clear cached layers
@@ -90,10 +93,68 @@ function showVariable(map, metadata, variable, iPressureLevel) {
     currentTDPMTilesLayer = tdPmtilesLayer;
 }
 
+function togglePressureSelector(map, metadata, show) {
+    if(currentPressureSelector && show) {
+        return;
+    }
+
+    if(!currentPressureSelector && !show){
+        return;
+    }
+
+    if(show) {
+        const PressureSelector = L.Control.extend({
+            onAdd: function(map) {
+                const div = L.DomUtil.create('div', 'leaflet-bar');
+                div.style.background = 'white';
+                div.style.padding = '4px';
+                const label = L.DomUtil.create('label', '', div);
+                label.textContent = 'Pressure level (hPa)';
+                label.style.marginRight = '4px';
+                const select = L.DomUtil.create('select', '', div);
+
+                // Prevent map interactions when interacting with control
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.disableScrollPropagation(div);
+
+                metadata.levels.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = v;
+                    select.appendChild(opt);
+                });
+
+                const runLogic = value => {
+                    console.log('Selected:', value);
+                    currentLevel = metadata.levels.indexOf(+value);
+                    console.log('Index', currentLevel)
+                    showVariable(map, metadata, currentVariable, currentLevel)
+                };
+
+                select.onchange = e => runLogic(e.target.value);
+
+                // Run logic on initial load
+                setTimeout(() => runLogic(select.value), 0);
+
+                return div;
+            },
+
+            onRemove: function(map) {}
+        });
+        currentPressureSelector = new PressureSelector({ position: 'topright' })
+        map.addControl(currentPressureSelector);
+    } else {
+        map.removeControl(currentPressureSelector);
+        currentPressureSelector = null;
+    }
+}
+
 // Main map loading
 async function setupMap() {
     const response = await fetch(dataURL + 'metadata.json')
     const metadata = await response.json()
+    currentVariable = Object.keys(metadata.variables)[0];
+    currentLevel = 0;
 
     var map = L.map('map', {
         zoom: 5,
@@ -127,7 +188,9 @@ async function setupMap() {
 
             const runLogic = value => {
                 console.log('Selected:', value);
-                showVariable(map, metadata, value, 0)
+                currentVariable = value;
+                togglePressureSelector(map, metadata, metadata.variables[value].is_level);
+                showVariable(map, metadata, currentVariable, currentLevel);
             };
 
             select.onchange = e => runLogic(e.target.value);
@@ -142,8 +205,6 @@ async function setupMap() {
     });
     const variableSelector = new VariableSelector({ position: 'topright' });
     map.addControl(variableSelector);
-
-    L.control.slideMenu('<p>test</p>').addTo(map);
 }
 
 setupMap();
