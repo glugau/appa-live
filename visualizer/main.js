@@ -1,6 +1,8 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
 
 const dataURL = 'https://pub-0405e55247634298a3056ded59cb9feb.r2.dev/'
+const forwardCacheHours = 3;
+const layerOpacity = 0.8;
 
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'/*, minZoom: 0, maxZoom: 15*/});
 var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'/*, minZoom: 0, maxZoom: 5*/});
@@ -24,6 +26,7 @@ function getTimeInterval(metadata) {
     return startTime + '/' + endTime;
 }
 
+let cachedLayers = {}
 let currentPMTilesLayer = null;
 
 // Main map loading
@@ -52,32 +55,37 @@ async function setupMap() {
             this._timeDimension.getCurrentTime()
         );
 
-        console.log(timeIndex)
-
-        const pmtilesUrl = `${dataURL}tiles/2025-07-28T00Z_PT48H/2m_temperature/h${timeIndex}.pmtiles`;
-        const source = new PMTiles(pmtilesUrl);
-        const layer = leafletRasterLayer(source, {tms: 1,});
-
-         if (currentPMTilesLayer) {
-            this._map.removeLayer(currentPMTilesLayer);
+        for (const key of Object.keys(cachedLayers)) {
+            if(key < timeIndex - forwardCacheHours || key > timeIndex + forwardCacheHours){
+                this._map.removeLayer(cachedLayers[key]);
+                delete cachedLayers[key];
+            }
         }
 
-        layer.addTo(this._map);
-        currentPMTilesLayer = layer;
+        for(let i = timeIndex; i < Math.min(timeIndex + forwardCacheHours, this._timeDimension.getAvailableTimes().length); ++i) {
+            if(cachedLayers[i]){
+                continue;
+            }
+
+            const pmtilesUrl = `${dataURL}tiles/2025-07-28T00Z_PT48H/geopotential/lvl0/h${i}.pmtiles`;
+            const source = new PMTiles(pmtilesUrl);
+            const layer = leafletRasterLayer(source, {maxNativeZoom: 2});
+            layer.setOpacity(0);
+            layer.addTo(this._map);
+            cachedLayers[i] = layer;
+        }
+
+        if (currentPMTilesLayer) {
+            currentPMTilesLayer.setOpacity(0);
+        }
+
+        currentPMTilesLayer = cachedLayers[timeIndex];
+        currentPMTilesLayer.setOpacity(layerOpacity);
     }
     });
-    const tdPmtilesLayer = new TDPmtiles(pmtilesLayer);
+    const tdPmtilesLayer = new TDPmtiles(pmtilesLayer, {attribution: '<a href="https://montefiore-sail.github.io/appa/">APPA</a> weather model'});
     tdPmtilesLayer.addTo(map);
+    tdPmtilesLayer._onNewTimeLoading();
 }
 
 setupMap();
-
-// L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-//     attribution: 'Tiles © Esri'
-// }).addTo(map);
-
-// leafletRasterLayer(p, {opacity: 0.8, attribution: '<a href="https://montefiore-sail.github.io/appa/">APPA</a> weather model', minZoom: 0, maxNativeZoom: 2})
-// .addTo(map);
-
-// L.tileLayer('https://appa.nvidia-oci.saturnenterprise.io/tiles/specific_humidity/lvl10/h0/{z}/{x}/{y}.png', 
-//     {tms: 1, opacity: 0.8, attribution: '<a href="https://montefiore-sail.github.io/appa/">APPA</a> weather model', minZoom: 0, maxNativeZoom: 2}).addTo(map);
