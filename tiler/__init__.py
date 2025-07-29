@@ -82,8 +82,8 @@ def dataset_to_tiles(dataset: xr.Dataset,
             is_level = 'level' in dataset[variable].dims
             dims = set(dataset[variable].dims)
             reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
-            dqmin = dataset[variable].quantile(qmin, dim=reduce_dims)
-            dqmax = dataset[variable].quantile(qmax, dim=reduce_dims)
+            dqmin = float(dataset[variable].quantile(qmin, dim=reduce_dims))
+            dqmax = float(dataset[variable].quantile(qmax, dim=reduce_dims))
             
             for itime in range(len(list(dataset['time'].to_numpy()))):
                 if is_level:
