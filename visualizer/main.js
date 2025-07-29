@@ -203,6 +203,19 @@ async function setupMap() {
         fadeAnimation: false
     });
 
+    
+    map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        const info = `(${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+
+        L.popup()
+            .setLatLng(e.latlng)
+            .setContent(info)
+            .openOn(map);
+    });
+
     L.control.timeDimension({
         timeDimension: map.timeDimension,
         maxSpeed: 2,
