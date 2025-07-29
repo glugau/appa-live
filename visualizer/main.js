@@ -1,6 +1,6 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
 
-const dataURL = 'https://pub-0405e55247634298a3056ded59cb9feb.r2.dev/'
+const dataURL = 'https://data.appa-forecasts.download/'
 const lookAheadLayers = 4;
 const layerOpacity = 0.8;
 
