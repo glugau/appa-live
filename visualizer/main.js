@@ -1,7 +1,7 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
 
 const dataURL = 'https://pub-0405e55247634298a3056ded59cb9feb.r2.dev/'
-const forwardCacheHours = 3;
+const lookAheadLayers = 5;
 const layerOpacity = 0.8;
 
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'/*, minZoom: 0, maxZoom: 15*/});
@@ -26,26 +26,50 @@ function getTimeInterval(metadata) {
     return startTime + '/' + endTime;
 }
 
-let cachedLayers = {}
+let cachedPMTiles = {};
+let futureLayers = [];
 let currentPMTilesLayer = null;
 let currentTDPMTilesLayer = null;
 let currentPressureSelector = null;
 let currentVariable = null;
 let currentLevel = null;
+let curriTime = -1;
 
 function showVariable(map, metadata, variable, iPressureLevel) {
+    curriTime = -1;
     // Clear cached layers
-    for (const key of Object.keys(cachedLayers)) {
-        map.removeLayer(cachedLayers[key]);
-        delete cachedLayers[key];
+    for (const key of Object.keys(cachedPMTiles)) {
+        delete cachedPMTiles[key];
     }
 
-    currentPMTilesLayer = null; // Already removed from the cached layers cleanse
+    for (const key of Object.keys(futureLayers)) {
+        map.removeLayer(futureLayers[key]);
+        delete futureLayers[key];
+    }
+
+    if(currentPMTilesLayer) {
+        map.removeLayer(currentPMTilesLayer);
+        currentPMTilesLayer = null;
+    }
+
+    const [_, durationPart] = metadata.latest.split('_');
+    const duration = parseInt(durationPart.match(/\d+/)[0], 10);
 
     if(currentTDPMTilesLayer) {
         map.removeLayer(currentTDPMTilesLayer);
         currentTDPMTilesLayer = null;
     }
+
+    for(let iTime = 0; iTime < duration; ++iTime) {
+        let pmtilesUrl = `${dataURL}tiles/${metadata.latest}/${variable}/`;
+        if(metadata.variables[variable].is_level) {
+            pmtilesUrl += `lvl${iPressureLevel}/`
+        } 
+        pmtilesUrl += `h${iTime}.pmtiles`
+        const source = new PMTiles(pmtilesUrl);
+        cachedPMTiles[iTime] = source;
+    }
+
 
     const pmtilesLayer = L.tileLayer('', {}); // dummy layer
     const TDPmtiles = L.TimeDimension.Layer.extend({
@@ -54,37 +78,48 @@ function showVariable(map, metadata, variable, iPressureLevel) {
             this._timeDimension.getCurrentTime()
         );
 
-        for (const key of Object.keys(cachedLayers)) {
-            if(key < timeIndex - forwardCacheHours || key > timeIndex + forwardCacheHours){
-                this._map.removeLayer(cachedLayers[key]);
-                delete cachedLayers[key];
-            }
-        }
-
-        for(let i = timeIndex; i < Math.min(timeIndex + forwardCacheHours, this._timeDimension.getAvailableTimes().length); ++i) {
-            if(cachedLayers[i]){
-                continue;
-            }
-
-            let pmtilesUrl = `${dataURL}tiles/${metadata.latest}/${variable}/`;
-            if(metadata.variables[variable].is_level) {
-                pmtilesUrl += `lvl${iPressureLevel}/`
-            } 
-            pmtilesUrl += `h${i}.pmtiles`
-
-            const source = new PMTiles(pmtilesUrl);
-            const layer = leafletRasterLayer(source, {maxNativeZoom: 2});
-            layer.setOpacity(0);
-            layer.addTo(this._map);
-            cachedLayers[i] = layer;
-        }
+        // Play/Pause button rapidfires events for some reason
+        if(timeIndex == curriTime) return;
+        curriTime = timeIndex;
 
         if (currentPMTilesLayer) {
-            currentPMTilesLayer.setOpacity(0);
+            map.removeLayer(currentPMTilesLayer);
         }
 
-        currentPMTilesLayer = cachedLayers[timeIndex];
+        if(timeIndex in futureLayers) {
+            currentPMTilesLayer = futureLayers[timeIndex];
+            console.log('hit');
+        } else {
+            console.log('miss', timeIndex)
+            currentPMTilesLayer = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: 2});
+            currentPMTilesLayer.addTo(map);
+        }
+
+        delete futureLayers[timeIndex];
         currentPMTilesLayer.setOpacity(layerOpacity);
+
+        // Construct the future layers, and cleanup lingering ones which shouldn't
+        // be there (for instance due to manually changing the time)
+        for(let i = 0; i < this._timeDimension.getAvailableTimes().length; ++i) {
+            if(i > timeIndex && i <= timeIndex + lookAheadLayers) {
+                if(i in futureLayers) continue;
+
+                // (commented) Only prepare layers if in play mode. Only way I found was
+                // to look at the UI...
+                // const el = document.querySelector('[title="Play"]');
+                // if (!el || el.classList.contains('pause')) {
+                futureLayers[i] = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: 2});
+                futureLayers[i].addTo(map);
+                futureLayers[i].setOpacity(0);
+                // } else {
+                // }
+            } else {
+                if(i in futureLayers){
+                    map.removeLayer(futureLayers[i]);
+                    delete futureLayers[i];
+                }
+            }
+        }
     }
     });
     const tdPmtilesLayer = new TDPmtiles(pmtilesLayer, {attribution: '<a href="https://montefiore-sail.github.io/appa/">APPA</a> weather model'});
@@ -164,8 +199,14 @@ async function setupMap() {
             timeInterval: getTimeInterval(metadata),
             period: "PT1H"
         },
-        timeDimensionControl: true,
+        // timeDimensionControl: true,
+        fadeAnimation: false
     });
+
+    L.control.timeDimension({
+        timeDimension: map.timeDimension,
+        maxSpeed: 2,
+    }).addTo(map);
 
     osm.addTo(map);
 
