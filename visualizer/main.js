@@ -91,7 +91,9 @@ function showVariable(map, metadata, variable, iPressureLevel) {
         currentTDPMTilesLayer = null;
     }
 
-    for(let iTime = 0; iTime < duration; ++iTime) {
+    // Take duration + 1 because of the extra hour at step 0, which is the
+    // assimilation timestamp.    
+    for(let iTime = 0; iTime < duration + 1; ++iTime) {
         let pmtilesUrl = `${dataURL}tiles/${metadata.latest}/${variable}/`;
         if(metadata.variables[variable].is_level) {
             pmtilesUrl += `lvl${iPressureLevel}/`
