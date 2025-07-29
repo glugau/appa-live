@@ -1,7 +1,7 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
 
 const dataURL = 'https://pub-0405e55247634298a3056ded59cb9feb.r2.dev/'
-const lookAheadLayers = 5;
+const lookAheadLayers = 4;
 const layerOpacity = 0.8;
 
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'/*, minZoom: 0, maxZoom: 15*/});
