@@ -139,7 +139,7 @@ function showVariable(map, metadata, variable, iPressureLevel) {
                 // to look at the UI...
                 // const el = document.querySelector('[title="Play"]');
                 // if (!el || el.classList.contains('pause')) {
-                futureLayers[i] = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: maxAvailableZoom});
+                futureLayers[i] = leafletRasterLayer(cachedPMTiles[i], {maxNativeZoom: maxAvailableZoom});
                 futureLayers[i].addTo(map);
                 futureLayers[i].setOpacity(0);
                 // } else {
