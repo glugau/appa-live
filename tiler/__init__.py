@@ -34,6 +34,8 @@ def dataset_to_tiles(dataset: xr.Dataset,
             `cmap_mappings` for the given variable. Defaults to 'viridis'.
         temp_dir (PathLike, optional): Temporary directory used during tile
             generation. Defaults to './tmp'.
+        pmtiles (bool, optional): Whether to save the tiles in pmtiles format. This
+            requires mb-util and pmtiles to be installed. Defaults to False.
         n_threads (int, optional): Number of threads used for the generation of
             tiles. If `None` is provided, `min(32, os.cpu_count() + 4)` will be
             used. Defaults to `None`.
