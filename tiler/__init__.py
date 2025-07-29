@@ -17,7 +17,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                      cmap_default: str = 'viridis',
                      temp_dir: PathLike = './tmp',
                      pmtiles: bool = False,
-                     n_threads: int = None):
+                     n_threads: int = None,
+                     qmin=0.01,
+                     qmax=0.99):
     """Generate all tiles for a given dataset, to be viewed in applications such
     as Leaflet.
 
@@ -35,6 +37,8 @@ def dataset_to_tiles(dataset: xr.Dataset,
         n_threads (int, optional): Number of threads used for the generation of
             tiles. If `None` is provided, `min(32, os.cpu_count() + 4)` will be
             used. Defaults to `None`.
+        qmin (float, optional): Minimum quantile to represent. Defaults to 0.01.
+        qmax (float, optional): Maximum quantile to represent. Defaults to 0.99
     """
     logger = logging.getLogger(__name__)
     
@@ -55,11 +59,19 @@ def dataset_to_tiles(dataset: xr.Dataset,
             data = dataset[variable][itime].to_numpy()
         else:
             data = dataset[variable][itime][ilevel].to_numpy()
+            
+        dims = set(dataset[variable].dims)
+        reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
+        dqmin = dataset[variable].quantile(qmin, dim=reduce_dims)
+        dqmax = dataset[variable].quantile(qmax, dim=reduce_dims)
+            
         gen_tiles.gen_tiles(
             data,
             lats,
             lons,
             variable_output_dir,
+            dqmin,
+            dqmax,
             zoom_min,
             zoom_max,
             cmap,

@@ -10,15 +10,19 @@ import subprocess
 import rasterio
 import shutil
 
-def gen_tiles(data: np.ndarray,
-              latitudes: np.ndarray,
-              longitudes: np.ndarray,
-              output_dir: PathLike,
-              zoom_min: int = 0,
-              zoom_max: int = 3,
-              cmap: str = 'viridis',
-              temp_dir: PathLike = './tmp',
-              pmtiles: bool = False):
+def gen_tiles(
+    data: np.ndarray,
+    latitudes: np.ndarray,
+    longitudes: np.ndarray,
+    output_dir: PathLike,
+    data_min: float,
+    data_max: float,
+    zoom_min: int = 0,
+    zoom_max: int = 3,
+    cmap: str = 'viridis',
+    temp_dir: PathLike = './tmp',
+    pmtiles: bool = False,
+):
     """Generate, from 2D grid data, tiles that can be served with Leaflet.
     **This function expects longitude to range from 0 included to 360 excluded**.
 
@@ -27,6 +31,8 @@ def gen_tiles(data: np.ndarray,
         latitudes (np.ndarray): 1D (lon) latitudes array
         longitudes (np.ndarray): 1D (lat) longitudes array.
         output_dir (PathLike): Output directory of the tiles
+        data_min (float): Minimum data value to represent.
+        data_max (float): Maximum data value to represent.
         zoom_min (int, optional): Minimum zoom. Defaults to 0.
         zoom_max (int, optional): Maximum zoom. Defaults to 3.
         cmap (str, optional): Colormap available in `matplotlib.cm`. Defaults to 'viridis'.
@@ -36,14 +42,16 @@ def gen_tiles(data: np.ndarray,
             requires mb-util and pmtiles to be installed. The saved output will be
             in the file `output_dir.pmtiles`. Defaults to False.
     """
+    # Add the 360 degree column; otherwise tiles have a transparent 1px gap
     data = np.hstack([data, data[:, :1]])
     longitudes = np.append(longitudes, longitudes[-1] + longitudes[-1] - longitudes[-2])
 
+    # Make data fit the 0-360 degree longitude range
     if np.max(longitudes) > 190:
         data = np.roll(data, shift=-data.shape[1] // 2, axis=1)
         longitudes -= 180
         
-    color_data = to_cmap.array_to_rgb_u8(data, cmap)
+    color_data = to_cmap.array_to_rgb_u8(data, cmap, data_min, data_max)
 
     lon_min, lon_max = np.min(longitudes), np.max(longitudes)
     lat_min, lat_max = np.min(latitudes), np.max(latitudes)
