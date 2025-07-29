@@ -12,10 +12,10 @@ diffusion:
       corrections: 2
       delta: 0.1
 
-lead_time: 48 # How many hours to predict
+lead_time: 24 # How many hours to predict
 
 # If one of them is auto, will be equal to blanket_size minus the other
-preds_per_step: 12  # States to predict per AR step.
+preds_per_step: 24  # States to predict per AR step.
 past_window_size: auto  # Size of the sliding window of past GT/generated states
 
 precision: float16  # Options: float32, float16, bfloat16, null = model training precision
