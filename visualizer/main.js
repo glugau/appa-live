@@ -3,6 +3,7 @@ import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtile
 const dataURL = 'https://data.appa-forecasts.download/'
 const lookAheadLayers = 4;
 const layerOpacity = 0.8;
+const maxAvailableZoom = 2;
 
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'/*, minZoom: 0, maxZoom: 15*/});
 var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'/*, minZoom: 0, maxZoom: 5*/});
@@ -26,9 +27,38 @@ function getTimeInterval(metadata) {
     return startTime + '/' + endTime;
 }
 
+function lngLatToTileXY(lon, lat, zoom) {
+  const x = Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
+  const y = Math.floor(
+    (1 -
+      Math.log(
+        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
+      ) /
+        Math.PI) /
+      2 *
+      Math.pow(2, zoom)
+  );
+  return { x, y, z: zoom };
+}
+
+function lngLatToPixelInTile(lon, lat, zoom) {
+  const scale = Math.pow(2, zoom) * 256;
+  const x = ((lon + 180) / 360) * scale;
+  const y =
+    ((1 -
+      Math.log(
+        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
+      ) /
+        Math.PI) /
+      2) *
+    scale;
+  return { x: Math.floor(x) % 256, y: Math.floor(y) % 256 };
+}
+
 let cachedPMTiles = {};
 let futureLayers = [];
 let currentPMTilesLayer = null;
+let currentPMTilesSource = null;
 let currentTDPMTilesLayer = null;
 let currentPressureSelector = null;
 let currentVariable = null;
@@ -50,6 +80,7 @@ function showVariable(map, metadata, variable, iPressureLevel) {
     if(currentPMTilesLayer) {
         map.removeLayer(currentPMTilesLayer);
         currentPMTilesLayer = null;
+        currentPMTilesSource = null;
     }
 
     const [_, durationPart] = metadata.latest.split('_');
@@ -86,12 +117,12 @@ function showVariable(map, metadata, variable, iPressureLevel) {
             map.removeLayer(currentPMTilesLayer);
         }
 
+        currentPMTilesSource = cachedPMTiles[timeIndex];
+
         if(timeIndex in futureLayers) {
             currentPMTilesLayer = futureLayers[timeIndex];
-            console.log('hit');
         } else {
-            console.log('miss', timeIndex)
-            currentPMTilesLayer = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: 2});
+            currentPMTilesLayer = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: maxAvailableZoom});
             currentPMTilesLayer.addTo(map);
         }
 
@@ -108,7 +139,7 @@ function showVariable(map, metadata, variable, iPressureLevel) {
                 // to look at the UI...
                 // const el = document.querySelector('[title="Play"]');
                 // if (!el || el.classList.contains('pause')) {
-                futureLayers[i] = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: 2});
+                futureLayers[i] = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: maxAvailableZoom});
                 futureLayers[i].addTo(map);
                 futureLayers[i].setOpacity(0);
                 // } else {
@@ -160,9 +191,7 @@ function togglePressureSelector(map, metadata, show) {
                 });
 
                 const runLogic = value => {
-                    console.log('Selected:', value);
                     currentLevel = metadata.levels.indexOf(+value);
-                    console.log('Index', currentLevel)
                     showVariable(map, metadata, currentVariable, currentLevel)
                 };
 
@@ -204,7 +233,7 @@ async function setupMap() {
     });
 
     
-    map.on('click', function(e) {
+    map.on('click', async function(e) {
         let lat = e.latlng.lat;
         let lon = e.latlng.lng;
 
@@ -224,11 +253,46 @@ async function setupMap() {
         else
             info = `(${lat.toFixed(5)}, ${lon.toFixed(5)})`;
         
+        const { x, y, z } = lngLatToTileXY(lon, lat, Math.min(map.getZoom(), maxAvailableZoom));
+        const { x: px, y: py } = lngLatToPixelInTile(lon, lat, z);
 
-        L.popup()
-            .setLatLng(L.latLng(lat, lon))
-            .setContent(info)
-            .openOn(map);
+        const tileData = await currentPMTilesSource.getZxy(z, x, y);
+        const blob = new Blob([tileData.data], {type: 'image/png'});
+        const url = URL.createObjectURL(blob);
+
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const pixelX = Math.floor(px); // px from your lngLatToPixelInTile
+            const pixelY = Math.floor(py);
+
+            const [r, g, b, a] = ctx.getImageData(pixelX, pixelY, 1, 1).data; // [r,g,b,a]
+            console.log('Pixel RGBA:', r, g, b, a);
+            URL.revokeObjectURL(url);
+
+            info += `<br>RGB: ${r}, ${g}, ${b}`;
+            info += `<br>(Will be used to invert the colormap and give a value)`;
+
+            L.popup()
+                .setLatLng([lat, lon])
+                .setContent(info)
+                .openOn(map);
+        };
+
+        img.onerror = e => {
+            console.error('Image load failed', e);
+        };
+
+        img.src = url;
     });
 
     L.control.timeDimension({
@@ -256,7 +320,6 @@ async function setupMap() {
             });
 
             const runLogic = value => {
-                console.log('Selected:', value);
                 currentVariable = value;
                 togglePressureSelector(map, metadata, metadata.variables[value].is_level);
                 showVariable(map, metadata, currentVariable, currentLevel);
