@@ -238,16 +238,12 @@ async function setupMap() {
     map.on('click', async function(e) {
         let lat = e.latlng.lat;
         let lon = e.latlng.lng;
+        lon = ((lon + 180) % 360 + 360) % 360 - 180;
+        console.log(`Clicked ${lat} ${lon}`);
 
         const montefioreLat = 50.58607874775542;
         const montefioreLon = 5.560189111476355;
-        let montefiore = false;
-
-        if(Math.abs(lat - montefioreLat) < 0.1 && Math.abs(lon - montefioreLon) < 0.1) { 
-            lat = montefioreLat;
-            lon = montefioreLon;
-            montefiore = true;
-        }
+        let montefiore = Math.abs(lat - montefioreLat) < 0.1 && Math.abs(lon - montefioreLon) < 0.1;
 
         let info;
         if(montefiore)
@@ -285,7 +281,7 @@ async function setupMap() {
             info += `<br>(Will be used to invert the colormap and give a value)`;
 
             L.popup()
-                .setLatLng([lat, lon])
+                .setLatLng([e.latlng.lat, e.latlng.lng])
                 .setContent(info)
                 .openOn(map);
         };
