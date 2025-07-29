@@ -47,7 +47,7 @@ def dataset_to_tiles(dataset: xr.Dataset,
     lats = dataset['latitude'].to_numpy()  # [90, 89.75, ..., -89.75, -90]
     lons = dataset['longitude'].to_numpy()  # [0, 0.25, ..., 359.5, 359.75]
     
-    def process_slice(variable: str, itime: int, ilevel: int, variable_output_dir: Path, cmap: str):
+    def process_slice(variable: str, itime: int, ilevel: int, variable_output_dir: Path, cmap: str, dqmin: float, dqmax: float):
         
         if itime == 0 and (ilevel is None or ilevel <= 0):
             variations = len(dataset['time'].to_numpy())
@@ -59,11 +59,6 @@ def dataset_to_tiles(dataset: xr.Dataset,
             data = dataset[variable][itime].to_numpy()
         else:
             data = dataset[variable][itime][ilevel].to_numpy()
-            
-        dims = set(dataset[variable].dims)
-        reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
-        dqmin = dataset[variable].quantile(qmin, dim=reduce_dims)
-        dqmax = dataset[variable].quantile(qmax, dim=reduce_dims)
             
         gen_tiles.gen_tiles(
             data,
@@ -85,6 +80,10 @@ def dataset_to_tiles(dataset: xr.Dataset,
         for variable in dataset.data_vars:
             cmap = cmap_mappings.get(variable, cmap_default)
             is_level = 'level' in dataset[variable].dims
+            dims = set(dataset[variable].dims)
+            reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
+            dqmin = dataset[variable].quantile(qmin, dim=reduce_dims)
+            dqmax = dataset[variable].quantile(qmax, dim=reduce_dims)
             
             for itime in range(len(list(dataset['time'].to_numpy()))):
                 if is_level:
@@ -97,7 +96,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                                 itime,
                                 ilevel,
                                 path,
-                                cmap
+                                cmap,
+                                dqmin,
+                                dqmax
                             )
                         )
                 else:
@@ -109,7 +110,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                             itime,
                             -1,
                             path,
-                            cmap
+                            cmap,
+                            dqmin,
+                            dqmax
                         )
                     )
 
