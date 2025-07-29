@@ -80,14 +80,13 @@ def dataset_to_tiles(dataset: xr.Dataset,
         for variable in dataset.data_vars:
             cmap = cmap_mappings.get(variable, cmap_default)
             is_level = 'level' in dataset[variable].dims
-            dims = set(dataset[variable].dims)
-            reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
-            dqmin = float(dataset[variable].quantile(qmin, dim=reduce_dims))
-            dqmax = float(dataset[variable].quantile(qmax, dim=reduce_dims))
             
-            for itime in range(len(list(dataset['time'].to_numpy()))):
-                if is_level:
-                    for ilevel in range(len(list(dataset['level'].to_numpy()))):
+            if is_level:
+                for ilevel in range(len(list(dataset['level'].to_numpy()))):
+                    level_val = dataset['level'].values[ilevel]
+                    dqmin = float(dataset[variable].sel(level=level_val).quantile(qmin, dim=['time', 'latitude', 'longitude']))
+                    dqmax = float(dataset[variable].sel(level=level_val).quantile(qmax, dim=['time', 'latitude', 'longitude']))
+                    for itime in range(len(list(dataset['time'].to_numpy()))):
                         path = output_dir / Path(variable) / Path(f'lvl{ilevel}') / Path(f'h{itime}') 
                         futures.append(
                             executor.submit(
@@ -101,7 +100,10 @@ def dataset_to_tiles(dataset: xr.Dataset,
                                 dqmax
                             )
                         )
-                else:
+            else:
+                dqmin = float(dataset[variable].quantile(qmin, dim=['time', 'latitude', 'longitude']))
+                dqmax = float(dataset[variable].quantile(qmax, dim=['time', 'latitude', 'longitude']))
+                for itime in range(len(list(dataset['time'].to_numpy()))):
                     path = output_dir / Path(variable) / Path(f'h{itime}')
                     futures.append(
                         executor.submit(
