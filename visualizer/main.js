@@ -205,13 +205,28 @@ async function setupMap() {
 
     
     map.on('click', function(e) {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
+        let lat = e.latlng.lat;
+        let lon = e.latlng.lng;
 
-        const info = `(${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+        const montefioreLat = 50.58607874775542;
+        const montefioreLon = 5.560189111476355;
+        let montefiore = false;
+
+        if(Math.abs(lat - montefioreLat) < 0.1 && Math.abs(lon - montefioreLon) < 0.1) { 
+            lat = montefioreLat;
+            lon = montefioreLon;
+            montefiore = true;
+        }
+
+        let info;
+        if(montefiore)
+            info ='Montefiore Institute';
+        else
+            info = `(${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+        
 
         L.popup()
-            .setLatLng(e.latlng)
+            .setLatLng(L.latLng(lat, lon))
             .setContent(info)
             .openOn(map);
     });
