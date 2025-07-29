@@ -29,7 +29,7 @@ sudo ./aws/install
 
 Finally, to optimize storage, this code uses `pmtiles` which stores tiles as a single file that then is served with HTTP range requests instead of many small files. You can install it from [GitHub](https://github.com/protomaps/go-pmtiles/releases/latest), or run this script if on a Linux x86-64 system with the apt package manager.
 
-```
+```bash
 curl -s https://api.github.com/repos/protomaps/go-pmtiles/releases/latest \
 | grep "browser_download_url.*Linux_x86_64.tar.gz" \
 | cut -d '"' -f 4 \
