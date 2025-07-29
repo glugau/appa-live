@@ -41,6 +41,7 @@ curl -s https://api.github.com/repos/protomaps/go-pmtiles/releases/latest \
 ```
 
 ## Configuring environment variables
+
 Here are all the required environment variables to provide for the script to work
 
 - **CDS_API_KEY**: Your CDS api key, to download ERA5 data ([more info](https://cds.climate.copernicus.eu/how-to-api))
