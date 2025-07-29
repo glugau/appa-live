@@ -17,7 +17,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                      cmap_default: str = 'viridis',
                      temp_dir: PathLike = './tmp',
                      pmtiles: bool = False,
-                     n_threads: int = None):
+                     n_threads: int = None,
+                     qmin=0.01,
+                     qmax=0.99):
     """Generate all tiles for a given dataset, to be viewed in applications such
     as Leaflet.
 
@@ -35,6 +37,8 @@ def dataset_to_tiles(dataset: xr.Dataset,
         n_threads (int, optional): Number of threads used for the generation of
             tiles. If `None` is provided, `min(32, os.cpu_count() + 4)` will be
             used. Defaults to `None`.
+        qmin (float, optional): Minimum quantile to represent. Defaults to 0.01.
+        qmax (float, optional): Maximum quantile to represent. Defaults to 0.99
     """
     logger = logging.getLogger(__name__)
     
@@ -43,7 +47,7 @@ def dataset_to_tiles(dataset: xr.Dataset,
     lats = dataset['latitude'].to_numpy()  # [90, 89.75, ..., -89.75, -90]
     lons = dataset['longitude'].to_numpy()  # [0, 0.25, ..., 359.5, 359.75]
     
-    def process_slice(variable: str, itime: int, ilevel: int, variable_output_dir: Path, cmap: str):
+    def process_slice(variable: str, itime: int, ilevel: int, variable_output_dir: Path, cmap: str, dqmin: float, dqmax: float):
         
         if itime == 0 and (ilevel is None or ilevel <= 0):
             variations = len(dataset['time'].to_numpy())
@@ -55,11 +59,14 @@ def dataset_to_tiles(dataset: xr.Dataset,
             data = dataset[variable][itime].to_numpy()
         else:
             data = dataset[variable][itime][ilevel].to_numpy()
+            
         gen_tiles.gen_tiles(
             data,
             lats,
             lons,
             variable_output_dir,
+            dqmin,
+            dqmax,
             zoom_min,
             zoom_max,
             cmap,
@@ -73,6 +80,10 @@ def dataset_to_tiles(dataset: xr.Dataset,
         for variable in dataset.data_vars:
             cmap = cmap_mappings.get(variable, cmap_default)
             is_level = 'level' in dataset[variable].dims
+            dims = set(dataset[variable].dims)
+            reduce_dims = tuple(d for d in ('time', 'level', 'latitude', 'longitude') if d in dims)
+            dqmin = float(dataset[variable].quantile(qmin, dim=reduce_dims))
+            dqmax = float(dataset[variable].quantile(qmax, dim=reduce_dims))
             
             for itime in range(len(list(dataset['time'].to_numpy()))):
                 if is_level:
@@ -85,7 +96,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                                 itime,
                                 ilevel,
                                 path,
-                                cmap
+                                cmap,
+                                dqmin,
+                                dqmax
                             )
                         )
                 else:
@@ -97,7 +110,9 @@ def dataset_to_tiles(dataset: xr.Dataset,
                             itime,
                             -1,
                             path,
-                            cmap
+                            cmap,
+                            dqmin,
+                            dqmax
                         )
                     )
 

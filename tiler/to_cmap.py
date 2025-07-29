@@ -1,18 +1,19 @@
 import numpy as np
 from matplotlib import cm
 
-def array_to_rgb_u8(data, cmap_name='viridis'):
-    """
-    Converts a 2D array to a (3, H, W) RGB image using the given colormap.
+def array_to_rgb_u8(data, data_min, data_max, cmap_name='viridis'):
+    """Converts a 2D array to a (3, H, W) RGB image using the given colormap.
 
-    Parameters:
-    - data: 2D numpy array (lat, lon)
-    - cmap_name: str, name of a matplotlib colormap
+    Args:
+        data (_type_): The 2d data
+        data_min (float): Minimum data value to represent.
+        data_max (float): Maximum data value to represent.
+        cmap_name (str, optional): Name of the colormap. Defaults to 'viridis'.
 
     Returns:
-    - rgb: numpy array with shape (3, lat, lon), dtype=float32, range [0, 1]
+        _type_: _description_
     """
-    norm = (data - np.min(data)) / (np.ptp(data) + 1e-8)  # normalize to [0, 1]
+    norm = np.clip((data - data_min) / (data_max - data_min + 1e-8), 0, 1)
     cmap = cm.get_cmap(cmap_name)
     rgba = cmap(norm)  # shape: (lat, lon, 4)
     rgb = np.moveaxis(rgba[..., :3], -1, 0)  # -> (3, lat, lon)
