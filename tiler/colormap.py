@@ -96,11 +96,12 @@ def get_legends(
             this_output['values'] = values.astype(float).tolist()
             this_output['colors'] = colors
         logger.info('DONE computing colormap legend(s) for ' + variable)
+        return variable, this_output
         
     output = {}
     with ThreadPoolExecutor() as executor:
         results = executor.map(process_variable, dataset.data_vars)
         for variable, result in results:
-            this_output = result
+            output[variable] = result
     
     return output
