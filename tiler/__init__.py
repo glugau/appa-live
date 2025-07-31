@@ -1,4 +1,4 @@
-from . import gen_tiles, constants
+from . import gen_tiles, constants, colormap
 from os import PathLike
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor

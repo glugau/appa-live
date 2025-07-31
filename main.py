@@ -66,7 +66,20 @@ def main():
                 cmap_mappings=tiler.constants.CMAP_MAPPINGS,
                 cmap_default=tiler.constants.CMAP_DEFAULT,
                 temp_dir=temp_dir,
-                pmtiles=True
+                pmtiles=True,
+                qmin=0.01,
+                qmax=0.99
+            )
+            
+            ds = xr.open_zarr('https://appa.nvidia-oci.saturnenterprise.io/2025-07-24T06Z_PT48H.zarr/')
+            
+            logger.info('Computing color-value mappings')
+            colormaps = tiler.colormap.get_legends(
+                ds,
+                0.01,
+                0.99,
+                tiler.constants.CMAP_MAPPINGS,
+                tiler.constants.CMAP_DEFAULT
             )
             
             logger.info('Uploading tiles')
@@ -75,6 +88,7 @@ def main():
             metadata = {}
             metadata['latest'] = forecast_zarr_path.stem
             metadata['variables'] = {}
+            metadata['colormaps'] = colormaps
             for variable in ds.data_vars:
                 is_level = 'level' in ds[variable].dims
                 metadata['variables'][variable] = { 'is_level': is_level }

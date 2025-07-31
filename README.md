@@ -2,7 +2,7 @@
 
 ## Installing the dependencies
 
-Navigate to your preferred virtual environment, then run
+Navigate to your preferred virtual environment **using python 3.12** (later/earlier versions will fail due to dependency versions), then run
 
 ```bash
 pip install git+ssh://git@github.com/montefiore-sail/appa.git@v1.0 --no-deps

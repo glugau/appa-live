@@ -1,7 +1,7 @@
 from rasterio.transform import from_origin
 from os import PathLike
 from pathlib import Path
-from tiler import to_cmap
+from tiler import colormap
 
 import tempfile
 import numpy as np
@@ -51,7 +51,7 @@ def gen_tiles(
         data = np.roll(data, shift=-data.shape[1] // 2, axis=1)
         longitudes -= 180
         
-    color_data = to_cmap.array_to_rgb_u8(data, data_min, data_max, cmap)
+    color_data = colormap.array_to_rgb_u8(data, data_min, data_max, cmap)
 
     lon_min, lon_max = np.min(longitudes), np.max(longitudes)
     lat_min, lat_max = np.min(latitudes), np.max(latitudes)
