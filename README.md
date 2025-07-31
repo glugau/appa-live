@@ -63,3 +63,9 @@ You can also use `-h` to get a help message and `--temp-dir` to override the def
 ## Running individual modules
 
 Most modules can be run with `python -m module_name`. Refer to each module's "README.md" file for more information.
+
+## Known limitations
+
+- The data sources come with high delay (about 6-12 hours) which makes the forecast less accurate than it could be. A possible fix would be upgrading to paid data such as ECMWF's MARS datasets.
+- The IFS dataset used doesn't include sea surface temperature, which means that this code currently fetches this data from ERA5, which comes with about 5 days of delay. This variable, however, does not change very fast and thus this delay may be acceptable. [This example](https://data.marine.copernicus.eu/viewer) demonstrates this.
+- Because of the many file conversions, the units of the variables are lost along the way and have to be hardcoded into the frontend JavaScript, despite zarr being able to store information about those. It should be possible to propagate the units through (especially using the statistics `.zarr` file) with some work.

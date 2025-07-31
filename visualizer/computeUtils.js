@@ -1,10 +1,10 @@
-function addHoursToISO(isoStr, hours) {
+export function addHoursToISO(isoStr, hours) {
   const date = new Date(isoStr);
   date.setHours(date.getHours() + hours);
   return date.toISOString();
 }
 
-function getTimeInterval(metadata) {
+export function getTimeInterval(metadata) {
     console.log(metadata)
 
     const [datePart, durationPart] = metadata.latest.split('_');
@@ -15,7 +15,7 @@ function getTimeInterval(metadata) {
     return startTime + '/' + endTime;
 }
 
-function lngLatToTileXY(lon, lat, zoom) {
+export function lngLatToTileXY(lon, lat, zoom) {
   const x = Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
   const y = Math.floor(
     (1 -
@@ -29,7 +29,7 @@ function lngLatToTileXY(lon, lat, zoom) {
   return { x, y, z: zoom };
 }
 
-function lngLatToPixelInTile(lon, lat, zoom) {
+export function lngLatToPixelInTile(lon, lat, zoom) {
   const scale = Math.pow(2, zoom) * 256;
   const x = ((lon + 180) / 360) * scale;
   const y =
@@ -43,7 +43,7 @@ function lngLatToPixelInTile(lon, lat, zoom) {
   return { x: Math.floor(x) % 256, y: Math.floor(y) % 256 };
 }
 
-function closestRgb(rgb, rgbArr) {
+export function closestRgb(rgb, rgbArr) {
     let minDist = Infinity;
     let closestIndex = -1;
     for (let i = 0; i < rgbArr.length; i++) {

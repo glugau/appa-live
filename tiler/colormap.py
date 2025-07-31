@@ -80,7 +80,7 @@ def get_legends(
         is_level = 'level' in dataset[variable].dims
         if is_level:
             for ilevel in range(len(list(dataset['level'].to_numpy()))):
-                level_val = dataset['level'].values[ilevel]
+                level_val = int(dataset['level'].values[ilevel])
                 this_output[level_val] = {}
                 dqmin = float(dataset[variable].sel(level=level_val).quantile(qmin, dim=['time', 'latitude', 'longitude']))
                 dqmax = float(dataset[variable].sel(level=level_val).quantile(qmax, dim=['time', 'latitude', 'longitude']))
