@@ -24,10 +24,10 @@ def download_latest(target: str) -> datetime:
         datetime: The date and time of the downloaded data
     '''
     data_file = os.path.join(target, 'data.grib2')
-    client = Client(model='ifs')
+    client = Client(model="ifs")
     result = client.retrieve(
         type='fc',
-        step=1,
+        step=0,
         param=[
                 # Single level fields
                 
