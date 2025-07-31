@@ -1,10 +1,11 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
 import * as cu from './computeUtils.js';
+import UNITS from './units.js';
 
-const dataURL = 'https://data.appa-forecasts.download/'
-const lookAheadLayers = 4;
-const layerOpacity = 0.8;
-const maxAvailableZoom = 2;
+const DATA_URL = 'https://data.appa-forecasts.download/'
+const LOOK_AHEAD_LAYERS = 4;
+const LAYER_OPACITY = 0.8;
+const MAX_AVAILABLE_ZOOM = 2;
 
 var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'/*, minZoom: 0, maxZoom: 15*/});
 var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'/*, minZoom: 0, maxZoom: 5*/});
@@ -50,7 +51,7 @@ function showVariable(map, metadata, variable, iPressureLevel) {
     // Take duration + 1 because of the extra hour at step 0, which is the
     // assimilation timestamp.    
     for(let iTime = 0; iTime < duration + 1; ++iTime) {
-        let pmtilesUrl = `${dataURL}tiles/${metadata.latest}/${variable}/`;
+        let pmtilesUrl = `${DATA_URL}tiles/${metadata.latest}/${variable}/`;
         if(metadata.variables[variable].is_level) {
             pmtilesUrl += `lvl${iPressureLevel}/`
         } 
@@ -80,24 +81,24 @@ function showVariable(map, metadata, variable, iPressureLevel) {
         if(timeIndex in futureLayers) {
             currentPMTilesLayer = futureLayers[timeIndex];
         } else {
-            currentPMTilesLayer = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: maxAvailableZoom});
+            currentPMTilesLayer = leafletRasterLayer(cachedPMTiles[timeIndex], {maxNativeZoom: MAX_AVAILABLE_ZOOM});
             currentPMTilesLayer.addTo(map);
         }
 
         delete futureLayers[timeIndex];
-        currentPMTilesLayer.setOpacity(layerOpacity);
+        currentPMTilesLayer.setOpacity(LAYER_OPACITY);
 
         // Construct the future layers, and cleanup lingering ones which shouldn't
         // be there (for instance due to manually changing the time)
         for(let i = 0; i < this._timeDimension.getAvailableTimes().length; ++i) {
-            if(i > timeIndex && i <= timeIndex + lookAheadLayers) {
+            if(i > timeIndex && i <= timeIndex + LOOK_AHEAD_LAYERS) {
                 if(i in futureLayers) continue;
 
                 // (commented) Only prepare layers if in play mode. Only way I found was
                 // to look at the UI...
                 // const el = document.querySelector('[title="Play"]');
                 // if (!el || el.classList.contains('pause')) {
-                futureLayers[i] = leafletRasterLayer(cachedPMTiles[i], {maxNativeZoom: maxAvailableZoom});
+                futureLayers[i] = leafletRasterLayer(cachedPMTiles[i], {maxNativeZoom: MAX_AVAILABLE_ZOOM});
                 futureLayers[i].addTo(map);
                 futureLayers[i].setOpacity(0);
                 // } else {
@@ -173,7 +174,7 @@ function togglePressureSelector(map, metadata, show) {
 
 // Main map loading
 async function setupMap() {
-    const response = await fetch(dataURL + 'metadata.json')
+    const response = await fetch(DATA_URL + 'metadata.json')
     const metadata = await response.json()
     currentVariable = Object.keys(metadata.variables)[0];
     curriLvl = 0;
@@ -207,7 +208,7 @@ async function setupMap() {
         else
             info = `(${lat.toFixed(5)}, ${lon.toFixed(5)})`;
         
-        const { x, y, z } = cu.lngLatToTileXY(lon, lat, Math.min(map.getZoom(), maxAvailableZoom));
+        const { x, y, z } = cu.lngLatToTileXY(lon, lat, Math.min(map.getZoom(), MAX_AVAILABLE_ZOOM));
         const { x: px, y: py } = cu.lngLatToPixelInTile(lon, lat, z);
 
         const tileData = await currentPMTilesSource.getZxy(z, x, y);
@@ -243,7 +244,8 @@ async function setupMap() {
             let closestIndex = cu.closestRgb({r, g, b}, colormap['colors']);
             let closestValue = colormap['values'][closestIndex];
 
-            info += `<br>Value: ${closestValue}`;
+            let units = currentVariable in UNITS ? UNITS[currentVariable] : '(Unknown units)';
+            info += `<br>${closestValue.toFixed(6)} ${units}`;
 
             L.popup()
                 .setLatLng([e.latlng.lat, e.latlng.lng])
