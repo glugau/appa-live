@@ -49,7 +49,7 @@ def get_legends(
     qmax:float,
     cmap_mappings: dict[str, str], 
     cmap_default: str,
-    n_values: int = 100,
+    n_values: int = 4096,
 ):
     """Get a dictionary, where each key corresponds to a data variable in `dataset`,
     and for each key contains a `colors` field and a `values` field, with the same
