@@ -27,7 +27,7 @@ def download_latest(target: str) -> datetime:
     client = Client(model='ifs')
     result = client.retrieve(
         type='fc',
-        step=0,
+        step=1,
         param=[
                 # Single level fields
                 
