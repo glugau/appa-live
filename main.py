@@ -39,7 +39,7 @@ def main():
     
     with tempfile.TemporaryDirectory(dir=args.temp_dir) as temp_dir:
         try:
-            # Make paths
+            #Make paths
             weather_data_dir = os.path.join(temp_dir, 'weather_data')
             Path(weather_data_dir).mkdir(parents=True, exist_ok=True)
             forecast_output_dir = os.path.join(temp_dir, 'forecast')
@@ -70,8 +70,6 @@ def main():
                 qmin=0.01,
                 qmax=0.99
             )
-            
-            ds = xr.open_zarr('https://appa.nvidia-oci.saturnenterprise.io/2025-07-24T06Z_PT48H.zarr/')
             
             logger.info('Computing color-value mappings')
             colormaps = tiler.colormap.get_legends(

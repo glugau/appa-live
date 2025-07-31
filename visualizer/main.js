@@ -1,4 +1,5 @@
 import { PMTiles, leafletRasterLayer } from 'https://cdn.jsdelivr.net/npm/pmtiles@4.3.0/+esm';
+import * as cu from './computeUtils.js';
 
 const dataURL = 'https://data.appa-forecasts.download/'
 const lookAheadLayers = 4;
@@ -10,51 +11,6 @@ var cartodb = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y
 var toner = L.tileLayer('http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png', {attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://www.openstreetmap.org/copyright">ODbL</a>.', minZoom: 0, maxZoom: 5});
 var white = L.tileLayer("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEX///+nxBvIAAAAH0lEQVQYGe3BAQ0AAADCIPunfg43YAAAAAAAAAAA5wIhAAAB9aK9BAAAAABJRU5ErkJggg==", {minZoom: 0, maxZoom: 5});
 
-function addHoursToISO(isoStr, hours) {
-  const date = new Date(isoStr);
-  date.setHours(date.getHours() + hours);
-  return date.toISOString();
-}
-
-function getTimeInterval(metadata) {
-    console.log(metadata)
-
-    const [datePart, durationPart] = metadata.latest.split('_');
-    const duration = parseInt(durationPart.match(/\d+/)[0], 10);
-
-    const startTime = datePart.replace(/T(\d{2})Z$/, 'T$1:00:00Z');
-    const endTime = addHoursToISO(startTime, duration);
-    return startTime + '/' + endTime;
-}
-
-function lngLatToTileXY(lon, lat, zoom) {
-  const x = Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
-  const y = Math.floor(
-    (1 -
-      Math.log(
-        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
-      ) /
-        Math.PI) /
-      2 *
-      Math.pow(2, zoom)
-  );
-  return { x, y, z: zoom };
-}
-
-function lngLatToPixelInTile(lon, lat, zoom) {
-  const scale = Math.pow(2, zoom) * 256;
-  const x = ((lon + 180) / 360) * scale;
-  const y =
-    ((1 -
-      Math.log(
-        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
-      ) /
-        Math.PI) /
-      2) *
-    scale;
-  return { x: Math.floor(x) % 256, y: Math.floor(y) % 256 };
-}
-
 let cachedPMTiles = {};
 let futureLayers = [];
 let currentPMTilesLayer = null;
@@ -62,7 +18,7 @@ let currentPMTilesSource = null;
 let currentTDPMTilesLayer = null;
 let currentPressureSelector = null;
 let currentVariable = null;
-let currentLevel = null;
+let curriLvl = null;
 let curriTime = -1;
 
 function showVariable(map, metadata, variable, iPressureLevel) {
@@ -193,8 +149,8 @@ function togglePressureSelector(map, metadata, show) {
                 });
 
                 const runLogic = value => {
-                    currentLevel = metadata.levels.indexOf(+value);
-                    showVariable(map, metadata, currentVariable, currentLevel)
+                    curriLvl = metadata.levels.indexOf(+value);
+                    showVariable(map, metadata, currentVariable, curriLvl)
                 };
 
                 select.onchange = e => runLogic(e.target.value);
@@ -220,14 +176,14 @@ async function setupMap() {
     const response = await fetch(dataURL + 'metadata.json')
     const metadata = await response.json()
     currentVariable = Object.keys(metadata.variables)[0];
-    currentLevel = 0;
+    curriLvl = 0;
 
     var map = L.map('map', {
         zoom: 5,
         center: [50.586180926650044, 5.559588296374543],
         timeDimension: true,
         timeDimensionOptions: {
-            timeInterval: getTimeInterval(metadata),
+            timeInterval: cu.getTimeInterval(metadata),
             period: "PT1H"
         },
         // timeDimensionControl: true,
@@ -251,8 +207,8 @@ async function setupMap() {
         else
             info = `(${lat.toFixed(5)}, ${lon.toFixed(5)})`;
         
-        const { x, y, z } = lngLatToTileXY(lon, lat, Math.min(map.getZoom(), maxAvailableZoom));
-        const { x: px, y: py } = lngLatToPixelInTile(lon, lat, z);
+        const { x, y, z } = cu.lngLatToTileXY(lon, lat, Math.min(map.getZoom(), maxAvailableZoom));
+        const { x: px, y: py } = cu.lngLatToPixelInTile(lon, lat, z);
 
         const tileData = await currentPMTilesSource.getZxy(z, x, y);
         const blob = new Blob([tileData.data], {type: 'image/png'});
@@ -262,6 +218,13 @@ async function setupMap() {
         const img = new Image();
         img.crossOrigin = 'anonymous';
 
+        let colormap;
+        if('values' in metadata['colormaps'][currentVariable]) {
+            colormap = metadata['colormaps'][currentVariable];
+        } else { // Is a level-based variable
+            colormap = metadata['colormaps'][currentVariable][metadata.levels[curriLvl]];
+        }
+
         img.onload = () => {
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
@@ -270,15 +233,17 @@ async function setupMap() {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
 
-            const pixelX = Math.floor(px); // px from your lngLatToPixelInTile
+            const pixelX = Math.floor(px);
             const pixelY = Math.floor(py);
 
             const [r, g, b, a] = ctx.getImageData(pixelX, pixelY, 1, 1).data; // [r,g,b,a]
             console.log('Pixel RGBA:', r, g, b, a);
             URL.revokeObjectURL(url);
 
-            info += `<br>RGB: ${r}, ${g}, ${b}`;
-            info += `<br>(Will be used to invert the colormap and give a value)`;
+            let closestIndex = cu.closestRgb({r, g, b}, colormap['colors']);
+            let closestValue = colormap['values'][closestIndex];
+
+            info += `<br>Value: ${closestValue}`;
 
             L.popup()
                 .setLatLng([e.latlng.lat, e.latlng.lng])
@@ -320,7 +285,7 @@ async function setupMap() {
             const runLogic = value => {
                 currentVariable = value;
                 togglePressureSelector(map, metadata, metadata.variables[value].is_level);
-                showVariable(map, metadata, currentVariable, currentLevel);
+                showVariable(map, metadata, currentVariable, curriLvl);
             };
 
             select.onchange = e => runLogic(e.target.value);

@@ -1,7 +1,8 @@
 import numpy as np
-from matplotlib import cm
+from matplotlib import colormaps as cm
 import xarray as xr
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 def array_to_rgb_u8(data, data_min, data_max, cmap_name='viridis'):
     """Converts a 2D array to a (3, H, W) RGB image using the given colormap.
@@ -56,6 +57,7 @@ def get_legends(
     with the same index in `values`. For pressure level variables, the key for
     the variable contains child dictionaries, where the key is given by the
     pressure level. Colors are given as dictionaries of `{r, g, b}` values.
+    This function is multithreaded by default.
 
     Args:
         dataset (xr.Dataset): Dataset containing the variables
@@ -70,26 +72,35 @@ def get_legends(
     """
     logger = logging.getLogger(__name__)
     output = {}
-    for variable in dataset.data_vars:
+    
+    def process_variable(variable):
         logger.info('Computing colormap legend(s) for ' + variable)
-        output[variable] = {}
+        this_output = {}
         cmap = cmap_mappings.get(variable, cmap_default)
         is_level = 'level' in dataset[variable].dims
         if is_level:
             for ilevel in range(len(list(dataset['level'].to_numpy()))):
                 level_val = dataset['level'].values[ilevel]
-                output[variable][level_val] = {}
+                this_output[level_val] = {}
                 dqmin = float(dataset[variable].sel(level=level_val).quantile(qmin, dim=['time', 'latitude', 'longitude']))
                 dqmax = float(dataset[variable].sel(level=level_val).quantile(qmax, dim=['time', 'latitude', 'longitude']))
                 values = np.linspace(dqmin, dqmax, n_values)
                 colors = _1d_arr_to_rgb_u8(values, dqmin, dqmax, cmap)
-                output[variable][level_val]['values'] = values.tolist()
-                output[variable][level_val]['colors'] = colors
+                this_output[level_val]['values'] = values.astype(float).tolist()
+                this_output[level_val]['colors'] = colors
         else:
             dqmin = float(dataset[variable].quantile(qmin, dim=['time', 'latitude', 'longitude']))
             dqmax = float(dataset[variable].quantile(qmax, dim=['time', 'latitude', 'longitude']))
             values = np.linspace(dqmin, dqmax, n_values)
             colors = _1d_arr_to_rgb_u8(values, dqmin, dqmax, cmap)
-            output[variable]['values'] = values.tolist()
-            output[variable]['colors'] = colors
+            this_output['values'] = values.astype(float).tolist()
+            this_output['colors'] = colors
+        logger.info('DONE computing colormap legend(s) for ' + variable)
+        
+    output = {}
+    with ThreadPoolExecutor() as executor:
+        results = executor.map(process_variable, dataset.data_vars)
+        for variable, result in results:
+            this_output = result
+    
     return output
