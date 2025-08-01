@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import * as cu from './computeUtils.js';
-import UNITS from './units.js';
 import { CONFIG } from './config.js';
 
 export async function makePopup(lat, lon, map, metadata) {
@@ -55,7 +54,7 @@ export async function makePopup(lat, lon, map, metadata) {
         let closestIndex = cu.closestRgb({r, g, b}, colormap['colors']);
         let closestValue = colormap['values'][closestIndex];
 
-        let units = state.currVariable in UNITS ? UNITS[state.currVariable] : '(Unknown units)';
+        let units = metadata.variables[state.currVariable].units || '(Unknown units)';
         info += `<br>${closestValue.toFixed(6)} ${units}`;
 
         if(units == 'K') {

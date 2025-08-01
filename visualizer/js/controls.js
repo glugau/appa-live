@@ -14,7 +14,7 @@ export function createVariableSelector(map, metadata) {
             Object.keys(metadata.variables).forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v;
-                opt.textContent = v;
+                opt.textContent = metadata.variables[v].long_name || v;
                 select.appendChild(opt);
             });
 

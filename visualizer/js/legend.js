@@ -1,5 +1,4 @@
 import { state } from './state.js';
-import UNITS from './units.js';
 
 export function addLegend(map, metadata, variable, iLevel) {
     if (state.currLegend) {
@@ -33,7 +32,7 @@ export function addLegend(map, metadata, variable, iLevel) {
         const stepSize = Math.floor(values.length / colorSteps);
         
         // Add units title
-        let units = state.currVariable in UNITS ? UNITS[state.currVariable] : '(Unknown units)';
+        let units = metadata.variables[state.currVariable].units || '(Unknown units)';
         const unitsLabel = document.createElement('div');
         unitsLabel.textContent = `Units: ${units}`;
         unitsLabel.style.fontSize = '10px';
