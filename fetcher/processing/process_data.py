@@ -95,7 +95,7 @@ def process_data(era5_data_folder: str,
     })
     
     precipitation = ds_imerg['precipitation'].squeeze("time", drop=True)
-    ds['total_precipitation'] = precipitation
+    ds['total_precipitation'] = precipitation.astype('float32')
     
     # Change to float32 (from float64)
     ds = ds.assign_coords(
