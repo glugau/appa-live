@@ -90,7 +90,13 @@ def main():
             metadata['colormaps'] = colormaps
             for variable in ds.data_vars:
                 is_level = 'level' in ds[variable].dims
-                metadata['variables'][variable] = { 'is_level': is_level }
+                units = ds[variable].attrs.get('units')
+                long_name = ds[variable].attrs.get('long_name', variable)
+                metadata['variables'][variable] = {
+                    'is_level': is_level,
+                    'units': units,
+                    'long_name': long_name
+                }
             # metadata['latitudes'] = list(ds['latitude'].to_numpy())
             # metadata['longitudes'] = list(ds['longitude'].to_numpy())
             metadata['levels'] = ds['level'].to_numpy().astype(int).tolist()

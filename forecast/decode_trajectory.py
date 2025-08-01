@@ -11,6 +11,7 @@ from einops import rearrange
 from tqdm import tqdm
 from typing import Sequence
 from pathlib import Path
+from forecast import metadata
 
 import torch
 import logging
@@ -32,7 +33,7 @@ def decode_to_zarr(
     autoencoder: AutoEncoder = None,
 ) -> None :
     """Decode a trajectory provided by the forecasting script into a zarr file
-    containing all variables.
+    containing all variables with units attached.
 
     Args:
         path_ae (PathLike): Path to the autoencoder model data
@@ -84,6 +85,10 @@ def decode_to_zarr(
         pressure_levels,
         path_data_stats
     )
+    
+    logger.info('Converting units and attaching them to the dataset')
+    ds = metadata.convert_units(ds)
+    ds = metadata.attach_metadata(ds)
     
     logger.info(f'Saving the decoded data in zarr format to {path_destination}')
     ds.to_zarr(path_destination, zarr_format=2, consolidated=True)
