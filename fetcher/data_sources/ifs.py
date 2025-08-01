@@ -94,3 +94,7 @@ def _grib_to_netcdf4(grib_path: str) -> None:
     
     pressures.to_netcdf(os.path.splitext(grib_path)[0] + '-pressure.nc')
     singles.to_netcdf(os.path.splitext(grib_path)[0] + '-single.nc')
+    
+if __name__ == '__main__':
+    dt = download_latest('tmp')
+    print(dt)

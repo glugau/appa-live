@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from fetcher import processing
 from fetcher.custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
+from fetcher.data_sources import imerg_early
 
 load_dotenv() # development (API keys)
 
@@ -58,6 +59,12 @@ if not args.skip_download:
         logger.info(f'Successfuly downloaded data from timestamp {datetime}')
         if source == 'ifs':
             ifs_datetime = datetime
+    
+    # Download imerg
+    imerg_dir = os.path.join(args.target_folder, 'imerg')
+    if not os.path.exists(imerg_dir):
+        os.makedirs(imerg_dir, exist_ok=True)
+    imerg_early.get_total_precipitation(ifs_datetime, imerg_dir)
     logger.info('All files downloaded')
 
 if ifs_datetime is None:
@@ -74,6 +81,7 @@ if not args.skip_processing:
     processing.process_data(
         os.path.join(args.target_folder, f'era5{RAW_SUFFIX}'),
         os.path.join(args.target_folder, f'ifs{RAW_SUFFIX}'),
+        os.path.join(args.target_folder, 'imerg'),
         toa_radiation,
         os.path.join(args.target_folder, 'processed')
     )

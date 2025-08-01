@@ -11,6 +11,7 @@ CTX_VARIABLES_PATH = Path(__file__).resolve().parent.parent / "ctx_variables.nc"
 
 def process_data(era5_data_folder: str, 
                  ifs_data_folder: str,
+                 imerg_data_folder: str,
                  toa_solar_radiation: xr.DataArray,
                  target_folder: str) -> None:
     '''
@@ -22,6 +23,7 @@ def process_data(era5_data_folder: str,
     
     path_era5_p, path_era5_s = _get_latest_era5(era5_data_folder)
     path_ifs_p, path_ifs_s = _get_latest_ifs(ifs_data_folder)
+    path_latest_imerg = _get_latest_imerg(imerg_data_folder)
     
     # Retrieve the date and time of the IFS data
     dt = latest_datetime(ifs_data_folder)
@@ -42,6 +44,8 @@ def process_data(era5_data_folder: str,
             CTX_VARIABLES_PATH,
             engine='netcdf4'),
         '0-360').squeeze("valid_time", drop=True)
+    ds_imerg = shift_longitude.shift_longitude(
+        xr.open_dataset(path_latest_imerg, engine='netcdf4'), '0-360')
 
     logger.info('Loaded all required netCDF files for processing')
     
@@ -89,6 +93,9 @@ def process_data(era5_data_folder: str,
         # Already properly named by solar_radiation.py
         'toa_incident_solar_radiation': 'toa_incident_solar_radiation',
     })
+    
+    precipitation = ds_imerg['precipitation'].squeeze("time", drop=True)
+    ds['total_precipitation'] = precipitation
     
     # Change to float32 (from float64)
     ds = ds.assign_coords(
@@ -160,6 +167,9 @@ def _get_latest_ifs(data_folder: str) -> tuple[str, str]:
     single_file = os.path.join(data_folder, max(single_files))
     
     return pressure_file, single_file
+
+def _get_latest_imerg(data_folder: str) -> str:
+    return os.path.join(data_folder, max(os.listdir(data_folder)))
 
 if __name__ == '__main__':
     import sys

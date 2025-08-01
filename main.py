@@ -19,6 +19,7 @@ from appa.save import safe_load
 
 from fetcher import processing
 from fetcher.custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
+from fetcher.data_sources import imerg_early
 
 import forecast
 import tiler
@@ -149,6 +150,10 @@ def fetch_data(target_dir: os.PathLike):
             logger.info(f'Successfuly downloaded data from timestamp {datetime}')
             if source == 'ifs':
                 ifs_datetime = datetime
+        
+        imerg_target = os.path.join(target_raw_dir, f'imerg{RAW_SUFFIX}')
+        if not os.path.exists(imerg_target): os.makedirs(imerg_target)
+        imerg_early.get_total_precipitation(ifs_datetime, imerg_target)
                 
         logger.info('All files downloaded')
         logger.info('Computing TOA radiation')
@@ -157,6 +162,7 @@ def fetch_data(target_dir: os.PathLike):
         processing.process_data(
             os.path.join(target_raw_dir, f'era5{RAW_SUFFIX}'),
             os.path.join(target_raw_dir, f'ifs{RAW_SUFFIX}'),
+            imerg_target,
             toa_radiation,
             target_dir
         )
