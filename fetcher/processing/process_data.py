@@ -94,6 +94,8 @@ def process_data(era5_data_folder: str,
         'toa_incident_solar_radiation': 'toa_incident_solar_radiation',
     })
     
+    logger.info('Adding total precipitation from IMERG')
+    
     precipitation = ds_imerg['precipitation'].squeeze("time", drop=True)
     ds['total_precipitation'] = precipitation.astype('float32')
     
