@@ -44,6 +44,8 @@ def get_total_precipitation(dt: datetime, output_dir: os.PathLike) -> Path:
     return out_path
 
 def _get_nc4_at_starthour(start_dt: datetime, output_dir: os.PathLike):
+    update_netrc_credentials()
+    
     year = start_dt.year
     day_of_year = start_dt.timetuple().tm_yday
 
@@ -103,3 +105,42 @@ def reformat_to_era5(ds: xr.Dataset):
 
 def add_together(a: xr.Dataset, b: xr.Dataset):
     pass
+
+from pathlib import Path
+
+def update_netrc_credentials():
+    username = os.getenv("EARTHDATA_USERNAME")
+    password = os.getenv("EARTHDATA_PASSWORD")
+    if not username or not password:
+        raise RuntimeError("EARTHDATA_USERNAME or EARTHDATA_PASSWORD missing")
+
+    netrc_path = Path.home() / ".netrc"
+    lines = []
+    if netrc_path.exists():
+        with netrc_path.open("r") as f:
+            lines = f.readlines()
+
+    new_lines = []
+
+    # Find and remove existing urs.earthdata.nasa.gov block
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.strip().startswith("machine urs.earthdata.nasa.gov"):
+            i += 1
+            while i < len(lines) and lines[i].startswith((" ", "\t")):
+                i += 1
+        else:
+            new_lines.append(line)
+            i += 1
+
+    # Append new credentials block at end
+    new_lines.append(f"machine urs.earthdata.nasa.gov\n")
+    new_lines.append(f" login {username}\n")
+    new_lines.append(f" password {password}\n")
+
+    netrc_path.write_text("".join(new_lines))
+    os.chmod(netrc_path, 0o600)
+    
+if __name__ == '__main__':
+    update_netrc_credentials()
