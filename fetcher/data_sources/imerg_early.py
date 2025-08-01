@@ -98,6 +98,7 @@ def reformat_to_era5(ds: xr.Dataset):
     new_lons = np.linspace(-180, 180, N_LON, endpoint=False)
 
     ds['precipitation'] = ds['precipitation'] * 0.001 # mm/hr to m/hr
+    ds['precipitation'] = ds['precipitation'].fillna(0)
     
     ds = ds.transpose("time", "latitude", "longitude")
 
