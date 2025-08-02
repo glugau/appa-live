@@ -19,7 +19,7 @@ export async function makePopup(lat, lon, map, metadata) {
     else
         info = `(${lat.toFixed(5)}, ${lon.toFixed(5)})`;
     
-    const { x, y, z } = cu.lngLatToTileXY(lon, lat, Math.min(map.getZoom(), CONFIG.MAX_AVAILABLE_ZOOM));
+    const { x, y, z } = cu.lngLatToTileXY(lon, lat, Math.min(map.getZoom(), metadata.zoom_max));
     const { x: px, y: py } = cu.lngLatToPixelInTile(lon, lat, z);
 
     const tileData = await state.currPMTilesSource.getZxy(z, x, y);

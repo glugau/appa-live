@@ -63,7 +63,7 @@ export function showVariable(map, metadata, variable, iPressureLevel) {
         if(timeIndex in state.futureLayers) {
             state.currPMTilesLayer = state.futureLayers[timeIndex];
         } else {
-            state.currPMTilesLayer = leafletRasterLayer(state.cachedPMTiles[timeIndex], {maxNativeZoom: CONFIG.MAX_AVAILABLE_ZOOM});
+            state.currPMTilesLayer = leafletRasterLayer(state.cachedPMTiles[timeIndex], {maxNativeZoom: metadata.zoom_max});
             state.currPMTilesLayer.addTo(map);
         }
 
@@ -80,7 +80,7 @@ export function showVariable(map, metadata, variable, iPressureLevel) {
                 // to look at the UI...
                 // const el = document.querySelector('[title="Play"]');
                 // if (!el || el.classList.contains('pause')) {
-                state.futureLayers[i] = leafletRasterLayer(state.cachedPMTiles[i], {maxNativeZoom: CONFIG.MAX_AVAILABLE_ZOOM});
+                state.futureLayers[i] = leafletRasterLayer(state.cachedPMTiles[i], {maxNativeZoom: metadata.zoom_max});
                 state.futureLayers[i].addTo(map);
                 state.futureLayers[i].setOpacity(0);
                 // } else {

@@ -98,6 +98,8 @@ def main():
                     'long_name': long_name
                 }
             metadata['levels'] = ds['level'].to_numpy().astype(int).tolist()
+            metadata['zoom_min'] = tiler.constants.ZOOM_MIN
+            metadata['zoom_max'] = tiler.constants.ZOOM_MAX
             writefile('metadata.json', json.dumps(metadata, indent=2))
                     
         except Exception:

@@ -12,7 +12,4 @@ export const CONFIG = {
     // Opacity of the weather data layer that is displayed above the continental
     // map data
     LAYER_OPACITY: 0.8,
-    
-    // Maximum available zoom value in the tiles sourced from DATA_URL.
-    MAX_AVAILABLE_ZOOM: 2
 };

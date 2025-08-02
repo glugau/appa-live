@@ -15,5 +15,8 @@ CMAP_MAPPINGS = {
 
 CMAP_DEFAULT = 'jet'
 
+# Modifying ZOOM_MIN is **NOT** supported by the web app
 ZOOM_MIN = 0
-ZOOM_MAX = 2
+
+# A value of 2 gives ~2GB of tile data. A value of 3, ~8GB.
+ZOOM_MAX = 3
