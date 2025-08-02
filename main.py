@@ -18,8 +18,8 @@ from appa.config.hydra import compose
 from appa.save import safe_load
 
 from fetcher import processing
+from fetcher import data_sources
 from fetcher.custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
-from fetcher.data_sources import imerg_early
 
 import forecast
 import tiler
@@ -97,14 +97,13 @@ def main():
                     'units': units,
                     'long_name': long_name
                 }
-            # metadata['latitudes'] = list(ds['latitude'].to_numpy())
-            # metadata['longitudes'] = list(ds['longitude'].to_numpy())
             metadata['levels'] = ds['level'].to_numpy().astype(int).tolist()
             writefile('metadata.json', json.dumps(metadata, indent=2))
                     
         except Exception:
             # This makes sure the temp dir is deleted in the end, even if there
-            # is an exception.
+            # is an exception. This is important since this is the root temp from
+            # which other temp dirs are created.
             logger.exception('Fatal exception')
     
 def parse_args() -> argparse.Namespace:
@@ -133,42 +132,40 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def fetch_data(target_dir: os.PathLike):
-    """Fetch the latest weather data, storing raw files into a temporary directory
-    so they are cleaned up after processing automatically.
+    """Fetch the latest weather data from all relevant sources into a single
+    zarr file.
 
     Args:
         target_dir (os.PathLike): Target directory for the processed/data.zarr
     """
-    SOURCES = ['ifs', 'era5']
-    RAW_SUFFIX = '_raw' # for the naming of the folders containing unprocessed data
     
     with tempfile.TemporaryDirectory(dir=target_dir) as target_raw_dir:
-
-        ifs_datetime = None
-
-        for source in SOURCES:
-            target = os.path.join(target_raw_dir, f'{source}{RAW_SUFFIX}')
-            logger.info(f'Fetching the latest data from {source} into {target}')
-            if not os.path.exists(target):
-                os.makedirs(target)
-            data_source = importlib.import_module(f'fetcher.data_sources.{source}')
-            datetime = data_source.download_latest(target)
-            logger.info(f'Successfuly downloaded data from timestamp {datetime}')
-            if source == 'ifs':
-                ifs_datetime = datetime
+        target_tmp_dirs = {
+            'ifs': Path(target_raw_dir) / 'ifs',
+            'era5': Path(target_raw_dir) / 'era5',
+            'imerg': Path(target_raw_dir) / 'imerg',
+        }
         
-        imerg_target = os.path.join(target_raw_dir, f'imerg{RAW_SUFFIX}')
-        if not os.path.exists(imerg_target): os.makedirs(imerg_target)
-        imerg_early.get_total_precipitation(ifs_datetime, imerg_target)
-                
-        logger.info('All files downloaded')
-        logger.info('Computing TOA radiation')
+        for path in target_tmp_dirs.values():
+            path.mkdir(parents=True, exist_ok=True)
+        
+        logger.info('Downloading the latest IFS data')
+        ifs_datetime = data_sources.ifs.download_latest(target_tmp_dirs['ifs'])
+        
+        logger.info('Downloading the latest ERA5 data (for SST)')
+        era5_datetime = data_sources.era5.download_latest(target_tmp_dirs['era5'])
+        
+        logger.info(f'Downloading IMERG data for datetime {ifs_datetime}')
+        data_sources.imerg_early.get_total_precipitation(ifs_datetime, target_tmp_dirs['imerg'])
+        
+        logger.info(f'Computing TOA solar radiation for datetime {ifs_datetime}')
         toa_radiation = xarray_integrated_toa_solar_radiation(ifs_datetime, 1)
-        logger.info('Processing the data')
-        processing.process_data(
-            os.path.join(target_raw_dir, f'era5{RAW_SUFFIX}'),
-            os.path.join(target_raw_dir, f'ifs{RAW_SUFFIX}'),
-            imerg_target,
+        
+        logger.info('Processing the downloaded and computed data')
+        out_path = processing.process_data(
+            target_tmp_dirs['era5'],
+            target_tmp_dirs['ifs'],
+            target_tmp_dirs['imerg'],
             toa_radiation,
             target_dir
         )
@@ -290,6 +287,12 @@ def upload_data(
     subprocess.run(cmd, check=True, env=env)
                 
 def writefile(file_key: str, contents: str):
+    """Write a single file to an S3 bucket.
+
+    Args:
+        file_key (str): File key (path/to/file.txt) with forward slashes (unix path)
+        contents (str): Contents of the file, as a string
+    """
     s3 = boto3.client(
         service_name='s3',
         endpoint_url = os.environ['S3_ENDPOINT'],

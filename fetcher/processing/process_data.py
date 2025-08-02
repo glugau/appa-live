@@ -9,24 +9,43 @@ import numpy as np
 
 CTX_VARIABLES_PATH = Path(__file__).resolve().parent.parent / "ctx_variables.nc"
 
-def process_data(era5_data_folder: str, 
-                 ifs_data_folder: str,
-                 imerg_data_folder: str,
+def process_data(era5_data_dir: os.PathLike, 
+                 ifs_data_dir: os.PathLike,
+                 imerg_data_dir: os.PathLike,
                  toa_solar_radiation: xr.DataArray,
-                 target_folder: str) -> None:
-    '''
-    Imports the latest data from IFS, the latest data from ERA5, and concatenates
+                 target_dir: os.PathLike) -> Path:
+    """Imports the latest data files from relevant sources, and concatenates
     them so that the latest ERA5 sea surface temperature is given along with the
-    rest. Makes everything into a zarr file ready to be sent for inference.
-    '''
+    rest. Makes everything into a zarr file ready to be sent for inference. The
+    output file may or may not contain units information for each variable, so 
+    it is best not to try to retrieve this information.
+
+    Args:
+        era5_data_dir (os.PathLike): Path to the directory containing raw ERA5
+            files. The specific file will be chosen as the one with the latest
+            name (`max(os.listdir(era5_data_dir))`).
+        ifs_data_dir (os.PathLike): Path to the directory containing raw IFS
+            files. The specific file will be chosen as the one with the latest
+            name (`max(os.listdir(ifs_data_dir))`).
+        imerg_data_dir (os.PathLike): Path to the directory containing raw IMERG
+            files. The specific file will be chosen as the one with the latest
+            name (`max(os.listdir(imerg_data_dir))`).
+        toa_solar_radiation (xr.DataArray): Array containing the TOA solar
+            radiation values for the timestep corresponding to the latest IFS and
+            IMERG data samples.
+        target_dir (os.PathLike): Target output directory
+
+    Returns:
+        Path: Path to the output `.zarr` file
+    """
     logger = logging.getLogger(__name__)
     
-    path_era5_p, path_era5_s = _get_latest_era5(era5_data_folder)
-    path_ifs_p, path_ifs_s = _get_latest_ifs(ifs_data_folder)
-    path_latest_imerg = _get_latest_imerg(imerg_data_folder)
+    path_era5_p, path_era5_s = _get_latest_era5(era5_data_dir)
+    path_ifs_p, path_ifs_s = _get_latest_ifs(ifs_data_dir)
+    path_latest_imerg = _get_latest_imerg(imerg_data_dir)
     
     # Retrieve the date and time of the IFS data
-    dt = latest_datetime(ifs_data_folder)
+    dt = latest_datetime(ifs_data_dir)
     dt_str = dt.isoformat(timespec='seconds').replace('+00:00', 'Z')
     dt_np = np.datetime64(dt.replace(tzinfo=None), 'ns')
     
@@ -120,16 +139,17 @@ def process_data(era5_data_folder: str,
         'expver'
     ])
         
-    target_path = os.path.join(target_folder, f'{dt_str}.zarr')
+    target_path = os.path.join(target_dir, f'{dt_str}.zarr')
     
     ds.attrs = {}
     
     # Save to file
     logger.info(f'Saving to {target_path}')
-    if not os.path.exists(target_folder):
-        os.makedirs(target_folder)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
         
     ds.to_zarr(target_path, mode='w', zarr_format=2, consolidated=True)
+    return Path(target_path)
 
 def latest_datetime(ifs_data_folder : str) -> datetime:
     path_pressure = _get_latest_ifs(ifs_data_folder)[0]
@@ -138,7 +158,7 @@ def latest_datetime(ifs_data_folder : str) -> datetime:
         "%Y-%m-%dT%H:%M:%SZ"
     ).replace(tzinfo=timezone.utc)
 
-def _get_latest_era5(data_folder: str) -> tuple[str, str]:
+def _get_latest_era5(data_folder: os.PathLike) -> tuple[str, str]:
     '''
     Gets the latest ifs data file that has been downloaded.
 
@@ -154,7 +174,7 @@ def _get_latest_era5(data_folder: str) -> tuple[str, str]:
     
     return pressure_file, single_file
 
-def _get_latest_ifs(data_folder: str) -> tuple[str, str]:
+def _get_latest_ifs(data_folder: os.PathLike) -> tuple[str, str]:
     '''
     Gets the latest ifs data file that has been downloaded.
 
@@ -170,31 +190,5 @@ def _get_latest_ifs(data_folder: str) -> tuple[str, str]:
     
     return pressure_file, single_file
 
-def _get_latest_imerg(data_folder: str) -> str:
+def _get_latest_imerg(data_folder: os.PathLike) -> str:
     return os.path.join(data_folder, max(os.listdir(data_folder)))
-
-if __name__ == '__main__':
-    import sys
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    logging.basicConfig(level=logging.INFO)
-    from custom_data.solar_radiation import xarray_integrated_toa_solar_radiation
-    process_data('./data/era5',
-                 './data/ifs',
-                 xarray_integrated_toa_solar_radiation(
-                     datetime.now(tz=timezone.utc), 1
-                 ),
-                 './data/processed')
-
-    ds = xr.open_dataset('data/processed/2025-07-15T00:00:00Z.zarr')
-    print(ds)
-    ds.to_netcdf('data/processed/2025-07-15T00:00:00Z.nc')
-
-    # ds = xr.open_dataset('data/processed/2025-07-15T00:00:00Z.zarr')
-    # print(ds)
-
-    
-    #ds = xr.open_dataset('./data/processed/2025-07-14T11:38:45Z.nc')
-    #print(ds)
-    
-    # ds = xr.open_dataset('ctx_variables.nc')
-    # print(ds.info())
